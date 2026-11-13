@@ -29,7 +29,7 @@ export function fmtDate(s) {
 }
 
 export function waterInterval(p) { return p.waterInterval || PLANT_DB[p.type]?.w || 7; }
-export function fertInterval(p)  { return p.fertInterval  || PLANT_DB[p.type]?.f || 14; }
+export function fertInterval(p)  { if (p.fertInterval) return p.fertInterval; const f = PLANT_DB[p.type]?.f; return f == null ? 14 : f; }
 
 function status(last, interval, verb) {
   if (!last) return { cls: 'soon', text: `Noch nie ${verb}`, days: -999 };
@@ -41,7 +41,7 @@ function status(last, interval, verb) {
   return { cls: 'ok', text: `In ${diff} Tagen ${verb === 'gegossen' ? 'gießen' : 'düngen'}`, days: diff, next };
 }
 export const waterStatus = p => status(p.lastWatered, waterInterval(p), 'gegossen');
-export const fertStatus  = p => status(p.lastFertilized, fertInterval(p), 'gedüngt');
+export const fertStatus  = p => fertInterval(p) === 0 ? { cls: 'ok', text: 'Kein Dünger nötig', days: 9999 } : status(p.lastFertilized, fertInterval(p), 'gedüngt');
 export function urgencyClass(p) {
   const w = waterStatus(p), f = fertStatus(p);
   if (w.cls === 'overdue' || f.cls === 'overdue') return 'overdue';

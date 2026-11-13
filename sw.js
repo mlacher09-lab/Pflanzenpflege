@@ -1,8 +1,9 @@
 // Service Worker: App-Shell offline verfügbar machen, API-Aufrufe immer ans Netz.
-const VERSION = 'pfl-v2.0.1';
+const VERSION = 'pfl-v2.1.0';
 const SHELL = [
-  './', './index.html', './manifest.webmanifest', './css/app.css',
-  './js/app.js', './js/plants-db.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js',
+  './', './index.html', './manifest.webmanifest', './css/app.css', './css/fonts.css', './impressum.html', './datenschutz.html',
+  './js/app.js', './js/api.js', './js/plants-db.js', './js/plants-more.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js',
+  './fonts/dmsans-400-latin.woff2', './fonts/dmsans-500-latin.woff2', './fonts/dmsans-600-latin.woff2', './fonts/playfairdisplay-400-latin.woff2', './fonts/playfairdisplay-600-latin.woff2',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
 ];
 

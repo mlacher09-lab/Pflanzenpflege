@@ -7,7 +7,7 @@ import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist } from './wishlist.js';
 
-export const APP_VERSION = '2.0.1';
+export const APP_VERSION = '2.1.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ export function openDetail(id) {
     </div>
     <div class="care-grid">
       <div class="care-card"><div class="care-card-icon">💧</div><div class="care-card-label">Gießrhythmus</div><div class="care-card-val">Alle ${waterInterval(p)} Tage${p.waterInterval ? ' <span class="muted">(eigen)</span>' : ''}</div></div>
-      <div class="care-card"><div class="care-card-icon">🌱</div><div class="care-card-label">Düngeintervall</div><div class="care-card-val">Alle ${fertInterval(p)} Tage${p.fertInterval ? ' <span class="muted">(eigen)</span>' : ''}</div></div>
+      <div class="care-card"><div class="care-card-icon">🌱</div><div class="care-card-label">Düngeintervall</div><div class="care-card-val">${fertInterval(p) === 0 ? 'Nicht düngen' : `Alle ${fertInterval(p)} Tage`}${p.fertInterval ? ' <span class="muted">(eigen)</span>' : ''}</div></div>
       <div class="care-card"><div class="care-card-icon">☀️</div><div class="care-card-label">Licht</div><div class="care-card-val">${esc(db.lt || '–')}</div></div>
       <div class="care-card"><div class="care-card-icon">🌡️</div><div class="care-card-label">Temperatur</div><div class="care-card-val">${esc(db.tmp || '–')}</div></div>
       <div class="care-card"><div class="care-card-icon">💦</div><div class="care-card-label">Luftfeuchte</div><div class="care-card-val">${esc(db.hm || '–')}</div></div>
@@ -449,6 +449,7 @@ async function init() {
   if (migrated) toast(`🌿 ${migrated} Pflanzen aus der alten Version übernommen`, 'success');
   await api.load();
   plants = await store.all('plants');
+  for (const p of plants) { if (!PLANT_DB[p.type]) { const fixed = resolvePlantName(p.type) || (p.type === 'Leuchterblume' ? 'Klivie' : null); if (fixed) { p.type = fixed; await store.put('plants', p); } } }
   bindEvents();
   initScan(); initFinder(); await initWishlist();
   renderPlants();

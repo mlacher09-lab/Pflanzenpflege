@@ -38,13 +38,20 @@ export function scorePlant(p, c) {
   if (p.d <= c.care) { score += 10; if (p.d === 1) reasons.push(['Pflegeleicht', 'good']); }
   else reasons.push(['Anspruchsvoller als gewünscht', 'warn']);
 
+  // Balkon / Terrasse: Freilandeignung
+  if (c.outdoor) {
+    if (p.out) { score += 10; reasons.push(['Für draußen geeignet', 'good']); }
+    else { score -= 15; reasons.push(['Eher Zimmerpflanze – nur im Sommer raus', 'warn']); }
+  }
   // Harte Filter
   let excluded = null;
+  if (c.trend && !p.trend) excluded = 'keine Trendpflanze';
+  if (!c.outdoor && p.indoor === false) excluded = 'nur für Balkon und Garten';
   if (c.pet && p.pet !== 'safe') excluded = p.pet === 'toxic' ? 'giftig für Haustiere' : 'Verträglichkeit je nach Art';
   if (c.size && p.size !== c.size) excluded = excluded || `Größe: ${SIZE_LEVELS[p.size]}`;
   if (c.flower && !p.flower) excluded = excluded || 'blüht nicht';
   if (c.air && !p.air) excluded = excluded || 'nicht als luftreinigend bekannt';
-  return { score: Math.min(100, score), reasons, excluded };
+  return { score: Math.max(0, Math.min(100, score)), reasons, excluded };
 }
 
 export function rankPlants(c, ownedTypes = new Set(), hideOwned = false) {
@@ -59,8 +66,8 @@ function readCriteria() {
     hum: Number(document.querySelector('input[name="fd-hum"]:checked')?.value || 2),
     temp: document.querySelector('input[name="fd-temp"]:checked')?.value || 'normal',
     size: $('fd-size').value, care: Number($('fd-care').value || 3),
-    pet: $('fd-pet').checked, flower: $('fd-flower').checked, air: $('fd-air').checked,
-    hideOwned: $('fd-owned').checked, room: $('fd-room').value,
+    pet: $('fd-pet').checked, flower: $('fd-flower').checked, air: $('fd-air').checked, trend: $('fd-trend').checked,
+    hideOwned: $('fd-owned').checked, room: $('fd-room').value, outdoor: !!ROOM_PRESETS[$('fd-room').value]?.outdoor,
   };
 }
 
@@ -71,6 +78,7 @@ export function initFinder() {
     const pre = ROOM_PRESETS[e.target.value]; if (!pre) return;
     document.querySelectorAll('input[name="fd-hum"]').forEach(r => r.checked = Number(r.value) === pre.hum);
     document.querySelectorAll('input[name="fd-temp"]').forEach(r => r.checked = r.value === pre.temp);
+    if (pre.light) document.querySelectorAll('input[name="fd-light"]').forEach(r => r.checked = r.value === pre.light);
     if (pre.pet) $('fd-pet').checked = true;
     renderFinder();
   };
@@ -93,7 +101,7 @@ export function renderFinder() {
       <div class="grow">
         <div class="name">${esc(r.name)}${owned.has(r.name) ? ' <span class="chip good">vorhanden</span>' : ''}${wished.has(r.name) ? ' <span class="chip wish">gewünscht</span>' : ''}</div>
         <div class="sci">${esc(r.p.sci)}</div>
-        <div class="chips">${r.reasons.map(([t, cls]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')}<span class="chip ${petCls}">🐾 ${PET_LEVELS[r.p.pet]}</span><span class="chip">📏 ${SIZE_LEVELS[r.p.size].split(' ')[0]}</span>${r.p.flower ? '<span class="chip">🌸 blüht</span>' : ''}${r.p.air ? '<span class="chip">🍃 luftreinigend</span>' : ''}</div>
+        <div class="chips">${r.reasons.map(([t, cls]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')}<span class="chip ${petCls}">🐾 ${PET_LEVELS[r.p.pet]}</span><span class="chip">📏 ${SIZE_LEVELS[r.p.size].split(' ')[0]}</span>${r.p.flower ? '<span class="chip">🌸 blüht</span>' : ''}${r.p.air ? '<span class="chip">🍃 luftreinigend</span>' : ''}${r.p.trend ? '<span class="chip wish">✨ Trend</span>' : ''}${r.p.out ? '<span class="chip">🌤 Balkon</span>' : ''}</div>
         <div class="result-actions">
           <button class="btn-ghost btn-sm" data-fwish="${esc(r.name)}">💜 Wunschliste</button>
           <button class="btn-ghost btn-sm" data-fadd="${esc(r.name)}">🪴 Habe ich</button>

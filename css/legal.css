@@ -1,0 +1,15 @@
+/* Rechtsseiten (Impressum, Datenschutz) */
+body { padding-bottom: 0; padding-left: 0; }
+.legal { max-width: 720px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left, 0px)) 60px max(16px, env(safe-area-inset-right, 0px)); }
+.legal h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 600; margin: 8px 0 4px; text-wrap: balance; }
+.legal h2 { font-size: 18px; font-weight: 600; margin: 28px 0 8px; }
+.legal h3 { font-size: 15px; font-weight: 600; margin: 18px 0 6px; }
+.legal p, .legal li { font-size: 15px; line-height: 1.6; }
+.legal ul { padding-left: 20px; margin: 6px 0 10px; }
+.legal .stand { color: var(--text-m); font-size: 13px; margin-bottom: 20px; }
+.legal .back { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--accent); font-weight: 600; margin-bottom: 14px; }
+.legal address { font-style: normal; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; line-height: 1.6; }
+.legal .todo { background: var(--soon-l); color: var(--soon); border-radius: var(--rs); padding: 10px 12px; font-size: 13px; margin: 10px 0 18px; }
+.legal table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 14px; }
+.legal th, .legal td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.legal th { color: var(--text-m); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }

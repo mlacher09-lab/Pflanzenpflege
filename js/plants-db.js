@@ -27,7 +27,9 @@ export const PET_LEVELS = { safe: 'Haustiersicher', toxic: 'Giftig für Haustier
 // Rückwärtskompatibel zu den alten Lichtwerten der ersten Version
 export const LEGACY_LIGHT = { 'Vollsonnig': 'sun', 'Hell': 'bright', 'Halbschattig': 'partial', 'Schattig': 'shade' };
 
-export const PLANT_DB = {
+import { PLANT_MORE } from './plants-more.js';
+
+const PLANT_BASE = {
   "Aloe Vera": { sci:"Aloe vera", e:"🌵", w:14, f:28, d:1, lt:"Sonnig bis hell", hm:"Niedrig", tmp:"15–30°C",
     light:["sun","bright"], hum:1, tmin:12, tmax:32, pet:"toxic", size:"s", air:false, flower:false, cat:"drought", aliases:["Aloe"],
     tips:["Staunässe unbedingt vermeiden – Topf mit Abzugsloch verwenden","Im Winter fast trocken halten (alle 3–4 Wochen)","Substrat: Kakteenerde mit Sand","Blattgel hilft bei kleinen Hautreizungen"] },
@@ -91,8 +93,8 @@ export const PLANT_DB = {
   "Kokospalme": { sci:"Cocos nucifera", e:"🥥", w:4, f:14, d:3, lt:"Vollsonnig", hm:"Hoch (60–80%)", tmp:"22–32°C",
     light:["sun"], hum:3, tmin:20, tmax:32, pet:"safe", size:"l", air:false, flower:false, cat:"moisture", aliases:["Cocos"],
     tips:["Braucht den hellsten Platz im Raum – am besten Südfenster","Erde gleichmäßig feucht halten, nie austrocknen lassen","Regelmäßig besprühen oder Luftbefeuchter nutzen","Kälteempfindlich – nie unter 18°C, Zugluft vermeiden","Als Zimmerpflanze anspruchsvoll"] },
-  "Leuchterblume": { sci:"Clivia miniata", e:"🌺", w:10, f:21, d:2, lt:"Hell, indirektes Licht", hm:"Mittel", tmp:"15–25°C",
-    light:["bright","partial"], hum:2, tmin:10, tmax:26, pet:"toxic", size:"m", air:false, flower:true, cat:"flowering", aliases:["Clivia","Klivie"],
+  "Klivie": { sci:"Clivia miniata", e:"🌺", w:10, f:21, d:2, lt:"Hell, indirektes Licht", hm:"Mittel", tmp:"15–25°C",
+    light:["bright","partial"], hum:2, tmin:10, tmax:26, pet:"toxic", size:"m", air:false, flower:true, cat:"flowering", aliases:["Clivia","Riemenblatt","Clivie"],
     tips:["Winterruhe bei 10–15°C und wenig Wasser fördert die Blüte","Keine direkte Sonne – Blätter verbrennen leicht","Nur nach der Blüte und selten umtopfen","Giftig für Mensch und Tier"] },
   "Philodendron": { sci:"Philodendron sp.", e:"🌿", w:7, f:14, d:1, lt:"Hell, indirektes Licht", hm:"Mittel bis hoch", tmp:"18–27°C",
     light:["bright","partial"], hum:2, tmin:16, tmax:28, pet:"toxic", size:"m", air:true, flower:false, cat:"moisture", aliases:["Philodendron hederaceum","Philodendron scandens","Baumfreund"],
@@ -107,7 +109,7 @@ export const PLANT_DB = {
     light:["bright","partial"], hum:2, tmin:16, tmax:28, pet:"safe", size:"s", air:false, flower:true, cat:"moisture", aliases:["Phalaenopsis","Schmetterlingsorchidee","Dendrobium"],
     tips:["In lichtdurchlässigem Orchideentopf kultivieren","Wurzeln grün = feucht, silbrig = gießen","Nach der Blüte Trieb bis zum zweiten Auge zurückschneiden","Kein Kalkwasser – Regenwasser ideal"] },
   "Sukkulente": { sci:"diverse Gattungen", e:"🪴", w:14, f:28, d:1, lt:"Sonnig bis hell", hm:"Niedrig", tmp:"10–30°C",
-    light:["sun","bright"], hum:1, tmin:8, tmax:32, pet:"mixed", size:"s", air:false, flower:false, cat:"drought", aliases:["Sukkulenten","Echeveria","Haworthia","Sedum","Crassula"],
+    light:["sun","bright"], hum:1, tmin:8, tmax:32, pet:"mixed", size:"s", air:false, flower:false, cat:"drought", aliases:["Sukkulenten","Sedum","Sempervivum","Hauswurz"],
     tips:["Substrat zwischen den Gaben komplett austrocknen lassen","Im Winter fast kein Wasser","Viel direktes Licht oder Pflanzenlampe","Staunässe führt schnell zu Wurzelfäule"] },
   "Geldbaum": { sci:"Crassula ovata", e:"🪴", w:14, f:28, d:1, lt:"Sonnig bis hell", hm:"Niedrig", tmp:"10–28°C",
     light:["sun","bright"], hum:1, tmin:8, tmax:30, pet:"toxic", size:"m", air:false, flower:false, cat:"drought", aliases:["Crassula ovata","Pfennigbaum","Jade Plant"],
@@ -174,6 +176,7 @@ export const PLANT_DB = {
     tips:["Blüht fast ganzjährig an einem sonnigen Platz","Sparsam gießen, im Winter noch weniger","Dornen und giftiger Milchsaft – Handschuhe tragen","Kakteenerde verwenden"] },
 };
 
+export const PLANT_DB = { ...PLANT_BASE, ...PLANT_MORE };
 export const PLANT_NAMES = Object.keys(PLANT_DB).sort((a, b) => a.localeCompare(b, 'de'));
 
 export const ROOMS = ["Wohnzimmer", "Schlafzimmer", "Küche", "Bad", "Büro", "Flur", "Kinderzimmer", "Balkon", "Terrasse"];
@@ -187,8 +190,8 @@ export const ROOM_PRESETS = {
   "Büro":         { hum: 1, temp: "normal" },
   "Flur":         { hum: 1, temp: "cool" },
   "Kinderzimmer": { hum: 2, temp: "normal", pet: true },
-  "Balkon":       { hum: 2, temp: "cool" },
-  "Terrasse":     { hum: 2, temp: "cool" },
+  "Balkon":       { hum: 2, temp: "cool", light: "sun", outdoor: true },
+  "Terrasse":     { hum: 2, temp: "cool", light: "sun", outdoor: true },
 };
 
 // Saisontipps nach Kategorie
@@ -263,8 +266,15 @@ export function resolvePlantName(input) {
 export function searchPlants(q) {
   const s = (q || '').trim().toLowerCase();
   if (!s) return PLANT_NAMES;
-  return PLANT_NAMES.filter(n => {
-    const p = PLANT_DB[n];
-    return n.toLowerCase().includes(s) || p.sci.toLowerCase().includes(s) || p.aliases.some(a => a.toLowerCase().includes(s));
-  });
+  const rank = n => {
+    const p = PLANT_DB[n], nl = n.toLowerCase();
+    if (nl === s) return 0;
+    if (nl.startsWith(s)) return 1;
+    if (p.aliases.some(a => a.toLowerCase().startsWith(s))) return 2;
+    if (nl.includes(s)) return 3;
+    if (p.sci.toLowerCase().startsWith(s)) return 4;
+    if (p.sci.toLowerCase().includes(s) || p.aliases.some(a => a.toLowerCase().includes(s))) return 5;
+    return 9;
+  };
+  return PLANT_NAMES.map(n => [n, rank(n)]).filter(([, r]) => r < 9).sort((a, b) => a[1] - b[1] || a[0].length - b[0].length).map(([n]) => n);
 }

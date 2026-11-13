@@ -307,6 +307,8 @@ dialog::backdrop { background: rgba(0,0,0,.45); backdrop-filter: blur(2px); }
 .list-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 14px; }
 .list-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); width: 100%; background: none; border-left: none; border-right: none; border-top: none; text-align: left; color: var(--text); font-size: 15px; }
 .list-item:last-child { border-bottom: none; }
+a.list-item { text-decoration: none; }
+a.list-item:hover { background: var(--surface2); }
 .list-item .li-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
 .list-item .li-text { flex: 1; min-width: 0; }
 .list-item .li-sub { font-size: 12px; color: var(--text-m); }

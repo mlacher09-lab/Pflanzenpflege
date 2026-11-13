@@ -42,7 +42,7 @@ Vercel → Project → *Settings → Domains* → Domain eintragen und die angez
 
 ## 5. Vor der Veröffentlichung an andere
 
-- **Datenschutzerklärung und Impressum:** Sobald die App öffentlich erreichbar ist und Fotos an einen KI-Dienst gehen, ist in Deutschland eine Datenschutzerklärung Pflicht (Verantwortlicher, Zweck „Pflanzenerkennung“, Empfänger Anthropic, Speicherdauer: Fotos werden nicht auf dem Server gespeichert). Eine Seite `datenschutz.html` ins Repository legen und unter *Mehr → Über* verlinken.
+- **Datenschutzerklärung und Impressum:** Beide Seiten liegen als `datenschutz.html` und `impressum.html` im Repository und sind unter *Mehr → Über* verlinkt. Vor der Veröffentlichung die Platzhalter in eckigen Klammern (Name, Anschrift, E-Mail, Datum) ersetzen und die gelben Hinweiskästen entfernen. Die Texte beschreiben die tatsächlichen Datenflüsse der App (Hosting bei Vercel, Fotos an Anthropic nur bei Scan, sonst alles lokal); sie sind eine Vorlage und keine Rechtsberatung.
 - **Zugangscode** (`APP_TOKEN`) setzen, sonst kann jeder mit der URL deinen Schlüssel nutzen. Zusätzlich im Claude-Dashboard ein monatliches Ausgabenlimit setzen.
 - **Testlauf auf echten Geräten:** Kamera (Rück-/Frontkamera), Galerie-Upload, Installation, Offline-Start (Flugmodus), Export/Import zwischen zwei Geräten.
 
