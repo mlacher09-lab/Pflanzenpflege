@@ -11,6 +11,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (process.env.LOG) res.on('finish', () => console.log(req.method, url.pathname, res.statusCode));
   if (url.pathname.startsWith('/api/')) {
     const name = url.pathname.slice(5).replace(/[^a-z0-9_-]/gi, '');
     try {

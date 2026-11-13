@@ -3,6 +3,9 @@ import { PLANT_DB, PLANT_NAMES, ROOMS, ROOM_PRESETS, LIGHT_LEVELS, HUM_LEVELS, S
 import { esc, toast } from './util.js';
 import { openAddModal, getPlants } from './app.js';
 import { addWish, getWishlist } from './wishlist.js';
+import { analytics } from './analytics.js';
+
+let trackTimer = null;
 
 const $ = id => document.getElementById(id);
 const TEMP_RANGE = { cool: [14, 18], normal: [18, 24], warm: [24, 30] };
@@ -93,6 +96,8 @@ export function renderFinder() {
   const wished = new Set(getWishlist().map(w => w.type));
   const results = rankPlants(c, owned, c.hideOwned);
   const good = results.filter(r => r.score >= 60);
+  clearTimeout(trackTimer);
+  trackTimer = setTimeout(() => analytics.track('finder_search', { light: c.light, hum: c.hum, temp: c.temp, room: c.room, size: c.size, care: c.care, pet: c.pet, flower: c.flower, air: c.air, trend: c.trend, results: good.length, top: results[0]?.name || '' }), 2500);
   $('finder-count').textContent = results.length ? `${good.length} gut passende Pflanzen${results.length > good.length ? ` · ${results.length - good.length} mit Einschränkungen` : ''}` : 'Keine Pflanze erfüllt alle Filter – lockere einen Filter.';
   $('finder-results').innerHTML = results.slice(0, 30).map(r => {
     const petCls = r.p.pet === 'safe' ? 'good' : r.p.pet === 'toxic' ? 'bad' : 'warn';
@@ -113,7 +118,7 @@ export function renderFinder() {
     </div>`;
   }).join('');
   $('finder-results').querySelectorAll('[data-fwish]').forEach(b => b.onclick = async () => { await addWish({ type: b.dataset.fwish, name: b.dataset.fwish, room: c.room, source: 'finder' }); toast(`💜 ${b.dataset.fwish} auf die Wunschliste gesetzt`, 'success'); renderFinder(); });
-  $('finder-results').querySelectorAll('[data-fadd]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.fadd, room: c.room, light: c.light }));
+  $('finder-results').querySelectorAll('[data-fadd]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.fadd, room: c.room, light: c.light, source: 'finder' }));
   $('finder-results').querySelectorAll('[data-finfo]').forEach(b => b.onclick = () => {
     const p = PLANT_DB[b.dataset.finfo]; const box = $(`finfo-${b.dataset.finfo.replace(/\W/g, '_')}`);
     box.hidden = !box.hidden;

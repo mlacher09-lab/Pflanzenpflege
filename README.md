@@ -9,7 +9,8 @@ als installierbare Web-App (PWA) für Handy, Tablet und Desktop. Ohne Build-Schr
 | **Scan** | Live-Kamera oder Galerie-Foto → Erkennung der Art (Top-3 mit Wahrscheinlichkeit), Zustand auf dem Foto, Übernahme ins Pflanzenbuch oder auf die Wunschliste; ohne Server: manuelle Zuordnung |
 | **Finder** | Licht, Luftfeuchte, Temperatur, Größe, Pflegeaufwand, haustiersicher, blühend, luftreinigend → bewertete Trefferliste (0–100 Punkte) mit Begründung |
 | **Wünsche** | Priorität, Wunsch-Standort, Notiz, Foto; „Gekauft“ überführt den Wunsch ins Pflanzenbuch |
-| **Mehr** | Sicherung exportieren/teilen/importieren (Gerätewechsel), Erinnerungen, KI-Server-Einstellungen, Design |
+| **Mehr** | Sicherung exportieren/teilen/importieren (Gerätewechsel), Erinnerungen, KI-Server-Einstellungen, Nutzungsstatistik an/aus, Design |
+| **Statistik** | Anonyme Ereignisse (welche Funktionen, welche Pflanzen) in Postgres; Auswertung unter `stats.html` mit Admin-Code |
 
 Datenbank: 120 Pflanzen (gängige Zimmerpflanzen, aktuelle Trendpflanzen, beliebte Balkonpflanzen) mit strukturierten Werten (Lichtstufen, Luftfeuchte, Temperaturbereich, Giftigkeit für Haustiere, Größe, Kategorie für Saisontipps, Aliase für die Scan-Zuordnung, Trend- und Balkon-Kennzeichen) in `js/plants-db.js` und `js/plants-more.js`.
 
@@ -50,6 +51,11 @@ fonts/, css/fonts.css   lokal eingebundene Schriften (keine Google-Anfragen)
 js/store.js             IndexedDB (Pflanzen, Wünsche, Einstellungen), Export/Import, Migration v1
 js/api.js               Client für /api/analyze
 api/analyze.js          Serverless-Funktion (Vercel): Erkennung & Gesundheitscheck mit Claude
+api/event.js            Serverless-Funktion: nimmt anonyme Nutzungsereignisse entgegen (Postgres)
+api/stats.js            Serverless-Funktion: Auswertung, geschützt durch ADMIN_TOKEN
+lib/db.js               Postgres-Verbindung (DATABASE_URL) und Tabellenanlage
+js/analytics.js         Client: Ereignisse sammeln, bündeln, senden; Opt-out
+stats.html              Auswertungsseite (Admin)
 sw.js, manifest.webmanifest, icons/   PWA
 dev-server.js           lokaler Server inkl. /api
 scripts/make-icons.mjs  PNG-Icons aus SVG erzeugen
@@ -70,6 +76,25 @@ Umgebungsvariablen (siehe `.env.example`):
 | `ALLOWED_ORIGIN` | nur bei getrenntem Hosting | erlaubte Ursprünge der App, kommagetrennt |
 
 Die Funktion nutzt den serverseitigen Modell-Fallback (`fallbacks: "default"`), damit ein abgelehnter Einzelfall nicht die ganze Analyse scheitern lässt. Pro Scan werden etwa 1 500–2 500 Token verbraucht, also wenige Cent.
+
+## Nutzungsstatistik aktivieren (Stufe 2)
+
+Ohne `DATABASE_URL` sendet die App nichts und die Funktion antwortet mit 503. Mit Datenbank:
+
+| Variable | Bedeutung |
+|---|---|
+| `DATABASE_URL` | Postgres-Verbindung, z. B. Neon über den Vercel-Marketplace (kostenloser Plan reicht lange) |
+| `ADMIN_TOKEN` | Zugangscode für `stats.html` und `/api/stats` |
+
+Die Tabelle `events` wird beim ersten Ereignis automatisch angelegt. Gespeichert werden Ereignistyp, wenige Eigenschaften (Pflanzenart, Finder-Kriterien, Scan-Ergebnis), eine zufällige Geräte-Kennung, App-Version und Plattform. Keine IP-Adressen, Fotos, Namen oder Notizen. Nutzer können die Statistik unter *Mehr* abschalten und ihre Kennung erneuern.
+
+Ereignisse: `app_open`, `plant_added`, `plant_deleted`, `care`, `scan`, `diagnose`, `finder_search`, `wish_added`, `wish_bought`, `backup`.
+
+Alte Daten löschen (z. B. monatlich per SQL-Konsole des Anbieters):
+
+```sql
+DELETE FROM events WHERE ts < now() - interval '24 months';
+```
 
 ## Veröffentlichen
 

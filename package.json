@@ -10,7 +10,13 @@
     "test": "node test/e2e.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.8.0"
+    "@anthropic-ai/sdk": "^1.8.0",
+    "pg": "^8.23.1"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.14"
+  }
 }

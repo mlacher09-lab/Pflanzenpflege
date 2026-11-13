@@ -29,7 +29,7 @@
   <h2>2. Das Wichtigste in Kürze</h2>
   <ul>
     <li>Deine Pflanzen, Fotos, Notizen und Wünsche werden <strong>nur auf deinem Gerät</strong> gespeichert (im Browser-Speicher der App). Sie werden nicht auf einen Server übertragen und sind für den Anbieter nicht einsehbar.</li>
-    <li>Es gibt <strong>kein Nutzerkonto, keine Cookies, kein Tracking</strong> und keine Analyse-Dienste.</li>
+    <li>Es gibt <strong>kein Nutzerkonto und keine Cookies</strong>. Eine <strong>anonyme Nutzungsstatistik</strong> (welche Funktionen und Pflanzenarten genutzt werden) kannst du unter „Mehr“ jederzeit abschalten; sie enthält keine Fotos, Namen, Notizen oder IP-Adressen.</li>
     <li>Nur wenn du die <strong>Pflanzenerkennung</strong> oder den <strong>Gesundheitscheck</strong> nutzt, wird das dafür aufgenommene Foto an den Server der App und von dort an den KI-Dienst von Anthropic übertragen.</li>
     <li>Schriften und alle Programmdateien werden vom Server der App geladen. Es werden keine Inhalte von Google oder anderen Drittanbietern nachgeladen.</li>
   </ul>
@@ -48,6 +48,15 @@
     <tr><td>Das Foto (verkleinert auf max. 1024 Pixel), die ausgewählte Art sowie ggf. Spitzname, Raum und Lichtverhältnis</td><td>Server-Funktion der App bei Vercel (USA), von dort an <strong>Anthropic PBC</strong>, 548 Market St, San Francisco, CA 94104, USA</td><td>Bestimmung der Pflanzenart bzw. Einschätzung des Zustands</td></tr>
   </table>
   <p>Die Übermittlung erfolgt ausschließlich auf deine Veranlassung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der gewünschten Funktion) bzw. Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch Auslösen der Funktion). Die Server-Funktion speichert Fotos nicht; sie leitet die Anfrage weiter und gibt das Ergebnis zurück. Anthropic verarbeitet die Daten als Auftragsverarbeiter nach seinen <a href="https://www.anthropic.com/legal/commercial-terms" rel="noopener">kommerziellen Nutzungsbedingungen</a>, nutzt API-Eingaben nicht zum Training seiner Modelle und löscht sie nach einer kurzen Frist, die der Missbrauchserkennung dient. Die Datenübermittlung in die USA stützt sich auf die Zertifizierung von Anthropic nach dem EU-US Data Privacy Framework und auf Standardvertragsklauseln. Fotografiere für die Erkennung nach Möglichkeit nur die Pflanze und keine Personen.</p>
+
+  <h2>5a. Anonyme Nutzungsstatistik</h2>
+  <p>Um zu verstehen, welche Funktionen genutzt werden und welche Pflanzen die Nutzerinnen und Nutzer beschäftigen, sendet die App Ereignismeldungen an die Server-Funktion <code>/api/event</code> und speichert sie in einer Datenbank bei [Datenbankanbieter, z. B. Neon Inc., USA / Supabase Inc., USA]. Gespeichert werden:</p>
+  <ul>
+    <li>Ereignistyp (z. B. „App geöffnet“, „Pflanze hinzugefügt“, „Scan“, „Finder-Suche“, „Wunsch hinzugefügt“) mit Zeitpunkt,</li>
+    <li>wenige Eigenschaften dazu, etwa die Pflanzenart, die gewählten Finder-Kriterien oder ob ein Scan erfolgreich war,</li>
+    <li>eine zufällig erzeugte Geräte-Kennung, die App-Version und die Plattform (iOS, Android, Desktop).</li>
+  </ul>
+  <p><strong>Nicht</strong> gespeichert werden IP-Adressen, Fotos, Spitznamen, Räume, Notizen oder sonstige Inhalte deines Pflanzenbuchs. Die Geräte-Kennung ist keiner Person zugeordnet; du kannst sie unter „Mehr → Zufällige Kennung erneuern“ jederzeit austauschen und die Statistik dort vollständig abschalten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Verbesserung der App); gegen diese Verarbeitung kannst du über den Schalter in der App widersprechen. Die Daten werden [Aufbewahrungsdauer, z. B. 24 Monate] aufbewahrt und danach gelöscht.</p>
 
   <h2>6. Benachrichtigungen</h2>
   <p>Erinnerungen an fällige Pflanzen werden lokal auf deinem Gerät erzeugt, wenn du Benachrichtigungen erlaubt hast. Es wird kein Push-Dienst und kein externer Server dafür verwendet. Die Erlaubnis kannst du jederzeit in den Einstellungen deines Browsers oder Betriebssystems widerrufen.</p>

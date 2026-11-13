@@ -4,6 +4,7 @@ import { store, uid } from './store.js';
 import { esc, today, toast, confirmDialog } from './util.js';
 import { openAddModal, attachAutocomplete } from './app.js';
 import { setWishRef } from './scan.js';
+import { analytics } from './analytics.js';
 
 const $ = id => document.getElementById(id);
 let wishlist = [];
@@ -24,6 +25,7 @@ export async function addWish({ type = null, name, room = '', note = '', photo =
   if (type && wishlist.some(w => w.type === type)) { toast(`${type} ist schon auf der Wunschliste`); return null; }
   const w = { id: uid(), type, name: name || type, room, note, photo, source, priority, addedAt: today() };
   await store.put('wishlist', w);
+  analytics.track('wish_added', { plant: type || '(unbekannt)', source, room });
   wishlist.push(w);
   if (!$('view-wishlist').hidden) renderWishlist();
   return w;
@@ -50,6 +52,7 @@ async function saveWish() {
   const old = editingId ? wishlist.find(w => w.id === editingId) : null;
   const w = { ...(old || { id: uid(), addedAt: today(), source: 'manual' }), name: type || name, type, room: $('w-room').value.trim(), priority: Number($('w-prio').value), note: $('w-note').value.trim(), photo: $('w-photo').value || old?.photo || null };
   await store.put('wishlist', w);
+  if (!editingId) analytics.track('wish_added', { plant: type || '(unbekannt)', source: 'manual', room: w.room });
   wishlist = await store.all('wishlist');
   $('wish-dialog').close(); renderWishlist();
   toast(editingId ? '✔ Wunsch gespeichert' : '💜 Wunsch hinzugefügt', 'success');
@@ -86,9 +89,9 @@ export function renderWishlist() {
   }).join('');
   list.querySelectorAll('[data-wbuy]').forEach(b => b.onclick = () => {
     const w = wishlist.find(x => x.id === b.dataset.wbuy); if (!w) return;
-    openAddModal({ type: w.type || '', room: w.room, photo: w.photo, light: w.type ? PLANT_DB[w.type]?.light?.[0] : undefined });
+    openAddModal({ type: w.type || '', room: w.room, photo: w.photo, light: w.type ? PLANT_DB[w.type]?.light?.[0] : undefined, source: 'wishlist' });
     const form = $('form-dialog');
-    const onClose = async () => { form.removeEventListener('close', onClose); const plants = await store.all('plants'); if (w.type && plants.some(p => p.type === w.type && p.addedAt === today())) { await removeWish(w.id); toast(`💜 ${w.name} von der Wunschliste ins Pflanzenbuch übernommen`, 'success'); } };
+    const onClose = async () => { form.removeEventListener('close', onClose); const plants = await store.all('plants'); if (w.type && plants.some(p => p.type === w.type && p.addedAt === today())) { analytics.track('wish_bought', { plant: w.type }); await removeWish(w.id); toast(`💜 ${w.name} von der Wunschliste ins Pflanzenbuch übernommen`, 'success'); } };
     form.addEventListener('close', onClose);
   });
   list.querySelectorAll('[data-wedit]').forEach(b => b.onclick = () => { const w = wishlist.find(x => x.id === b.dataset.wedit); if (w) openWishModal(w); });

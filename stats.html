@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Statistik – Pflanzenpflege</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/legal.css">
+<style>
+  .legal { max-width: 960px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0 22px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; }
+  .tile .n { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .l { font-size: 12px; color: var(--text-m); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+  .bar { height: 8px; background: var(--accent-l); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .chart { display: flex; align-items: flex-end; gap: 2px; height: 120px; border-bottom: 1px solid var(--border); padding-bottom: 2px; margin: 10px 0 4px; }
+  .chart div { flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-height: 1px; opacity: .85; }
+  .chart div:hover { opacity: 1; }
+  .legal td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  #login { max-width: 420px; }
+</style>
+</head>
+<body>
+<main class="legal">
+  <a class="back" href="./?view=more">‹ Zurück zur App</a>
+  <h1>Nutzungsstatistik</h1>
+  <p class="stand" id="meta">Nur mit Admin-Zugangscode (ADMIN_TOKEN) abrufbar.</p>
+
+  <form id="login" class="card">
+    <div class="form-group"><label for="tok">Admin-Zugangscode</label><input id="tok" type="password" autocomplete="current-password"></div>
+    <div class="form-group"><label for="days">Zeitraum</label><select id="days" class="input"><option value="7">7 Tage</option><option value="30" selected>30 Tage</option><option value="90">90 Tage</option><option value="365">1 Jahr</option></select></div>
+    <button class="btn-primary btn-block" type="submit">Auswertung laden</button>
+    <p class="hint" id="err"></p>
+  </form>
+
+  <div id="out" hidden>
+    <div class="tiles" id="tiles"></div>
+    <h2>Aktive Geräte pro Tag</h2>
+    <div class="chart" id="chart"></div>
+    <p class="hint" id="chart-hint"></p>
+    <div class="cols">
+      <section><h2>Ereignisse nach Typ</h2><table id="t-types"></table></section>
+      <section><h2>Plattformen & Versionen</h2><table id="t-platforms"></table></section>
+      <section><h2>Hinzugefügte Pflanzen (Zeitraum)</h2><table id="t-plants"></table></section>
+      <section><h2>Hinzugefügte Pflanzen (gesamt)</h2><table id="t-plants-all"></table></section>
+      <section><h2>Scan-Ergebnisse</h2><table id="t-scan-outcomes"></table><table id="t-scans"></table></section>
+      <section><h2>Standort-Finder</h2><table id="t-finder"></table><table id="t-finder-light"></table><table id="t-finder-rooms"></table></section>
+      <section><h2>Wunschliste</h2><table id="t-wishes"></table></section>
+      <section><h2>Pflegeaktionen</h2><table id="t-care"></table></section>
+    </div>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const LIGHT = { sun: 'Vollsonnig', bright: 'Hell', partial: 'Halbschattig', shade: 'Schattig' };
+const HUM = { 1: 'trocken', 2: 'normal', 3: 'feucht' };
+const TYPES = { app_open: 'App geöffnet', plant_added: 'Pflanze hinzugefügt', plant_deleted: 'Pflanze gelöscht', care: 'Gegossen/Gedüngt', scan: 'Scan', diagnose: 'Gesundheitscheck', finder_search: 'Finder-Suche', wish_added: 'Wunsch hinzugefügt', wish_bought: 'Wunsch gekauft', backup: 'Sicherung' };
+function table(id, head, rows, bars = false) {
+  const max = bars ? Math.max(1, ...rows.map(r => Number(r[1]) || 0)) : 0;
+  $(id).innerHTML = `<tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>` + (rows.length ? rows.map(r => `<tr>${r.map((c, i) => i === 0 ? `<td>${esc(c)}${bars ? `<div class="bar"><i style="width:${Math.round(100 * (Number(r[1]) || 0) / max)}%"></i></div>` : ''}</td>` : `<td class="num">${esc(c ?? '–')}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="9" class="muted">Noch keine Daten</td></tr>');
+}
+async function load(e) {
+  e?.preventDefault();
+  const tok = $('tok').value.trim(); if (!tok) return;
+  $('err').textContent = 'Lade…';
+  try {
+    const res = await fetch(`api/stats?days=${$('days').value}`, { headers: { 'x-admin-token': tok } });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
+    sessionStorage.setItem('adminTok', tok);
+    render(d);
+  } catch (err) { $('err').textContent = `Fehler: ${err.message}`; }
+}
+function render(d) {
+  $('err').textContent = ''; $('out').hidden = false;
+  $('meta').textContent = `Zeitraum: letzte ${d.days} Tage · Stand ${new Date(d.generatedAt).toLocaleString('de-DE')} · erstes Ereignis ${d.totals.first_event ? new Date(d.totals.first_event).toLocaleDateString('de-DE') : '–'}`;
+  const t = d.totals;
+  $('tiles').innerHTML = [[t.clients, 'Geräte im Zeitraum'], [t.clients_7d, 'Geräte 7 Tage'], [t.clients_1d, 'Geräte 24 h'], [t.events, 'Ereignisse']].map(([n, l]) => `<div class="tile"><div class="n">${n ?? 0}</div><div class="l">${l}</div></div>`).join('');
+  const max = Math.max(1, ...d.daily.map(x => x.clients));
+  $('chart').innerHTML = d.daily.map(x => `<div style="height:${Math.round(100 * x.clients / max)}%" title="${x.day}: ${x.clients} Geräte, ${x.events} Ereignisse"></div>`).join('');
+  $('chart-hint').textContent = d.daily.length ? `${d.daily[0].day} bis ${d.daily[d.daily.length - 1].day}, Höchstwert ${max} Geräte an einem Tag` : 'Noch keine Daten';
+  table('t-types', ['Typ', 'Anzahl', 'Geräte'], d.byType.map(x => [TYPES[x.type] || x.type, x.n, x.clients]), true);
+  table('t-platforms', ['Plattform / Version', 'Geräte'], [...d.platforms.map(x => [x.platform, x.clients]), ...d.versions.map(x => [`v${x.app_version || '?'}`, x.clients])]);
+  table('t-plants', ['Pflanze', 'Anzahl'], d.plantsAdded.map(x => [x.plant, x.n]), true);
+  table('t-plants-all', ['Pflanze', 'Anzahl'], d.plantsAll.map(x => [x.plant, x.n]), true);
+  table('t-scan-outcomes', ['Ergebnis', 'Anzahl'], d.scanOutcomes.map(x => [{ ok: 'erkannt', no_plant: 'keine Pflanze', no_server: 'kein Server', error: 'Fehler' }[x.result] || x.result, x.n]));
+  table('t-scans', ['Erkannte Pflanze', 'Anzahl', 'Ø Sicherheit'], d.scans.map(x => [x.plant || '(nicht in Datenbank)', x.n, x.confidence]), true);
+  const f = d.finder || {};
+  table('t-finder', ['Suchen gesamt', 'Haustier %', 'Trend %', 'Blühend %', 'Luftreinigend %'], f.searches ? [[f.searches, f.pet_pct ?? 0, f.trend_pct ?? 0, f.flower_pct ?? 0, f.air_pct ?? 0]] : []);
+  table('t-finder-light', ['Licht / Luftfeuchte', 'Suchen'], d.finderLight.map(x => [`${LIGHT[x.light] || x.light} · ${HUM[x.hum] || x.hum}`, x.n]), true);
+  table('t-finder-rooms', ['Raum', 'Suchen'], d.finderRooms.map(x => [x.room, x.n]), true);
+  table('t-wishes', ['Pflanze', 'Gewünscht', 'Gekauft'], d.wishes.map(x => [x.plant, x.n, x.bought]), true);
+  table('t-care', ['Aktion', 'Anzahl'], d.care.map(x => [{ water: 'Gegossen', fert: 'Gedüngt' }[x.kind] || x.kind, x.n]));
+}
+$('login').addEventListener('submit', load);
+$('days').addEventListener('change', () => { if ($('tok').value) load(); });
+const saved = sessionStorage.getItem('adminTok'); if (saved) { $('tok').value = saved; load(); }
+</script>
+</body>
+</html>

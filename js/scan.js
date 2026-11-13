@@ -4,6 +4,7 @@ import { api } from './api.js';
 import { esc, compressImage, toast, miniMarkdown } from './util.js';
 import { openAddModal, navigate, getPlants, attachAutocomplete } from './app.js';
 import { addWish } from './wishlist.js';
+import { analytics } from './analytics.js';
 
 const $ = id => document.getElementById(id);
 let stream = null;
@@ -81,12 +82,17 @@ async function identify() {
   const out = $('scan-result');
   out.innerHTML = `<div class="spinner-row"><div class="spinner"></div>Pflanze wird erkannt…</div>`;
   if (api.status !== 'ok') await api.health();
-  if (api.status !== 'ok') { renderNoServer(); return; }
+  if (api.status !== 'ok') { analytics.track('scan', { result: 'no_server', status: api.status }); renderNoServer(); return; }
   try {
     const res = await api.analyze({ mode: 'identify', image: photo });
     lastResult = res;
+    const top = res.candidates?.[0];
+    analytics.track('scan', top && res.is_plant !== false
+      ? { result: 'ok', plant: top.dbKey || '', sci: top.sci || '', confidence: top.confidence || 0, matched: !!top.dbKey }
+      : { result: 'no_plant' });
     renderCandidates(res);
   } catch (e) {
+    analytics.track('scan', { result: 'error', status: e.status || 0 });
     out.innerHTML = `<div class="ai-box error">Erkennung fehlgeschlagen: ${esc(e.message)}</div>${manualBlock()}`;
     bindManual();
   }
@@ -102,7 +108,7 @@ function manualBlock() {
 function bindManual() {
   const inp = $('scan-manual'); if (!inp) return;
   attachAutocomplete(inp, $('scan-manual-ac'));
-  $('scan-manual-add').onclick = () => { const key = resolvePlantName(inp.value); if (!key) { toast('Art nicht gefunden – aus der Liste wählen', 'error'); return; } openAddModal({ type: key, photo }); };
+  $('scan-manual-add').onclick = () => { const key = resolvePlantName(inp.value); if (!key) { toast('Art nicht gefunden – aus der Liste wählen', 'error'); return; } openAddModal({ type: key, photo, source: 'scan_manual' }); };
   $('scan-retry').onclick = () => startCamera();
 }
 function renderNoServer() {
@@ -141,7 +147,7 @@ function renderCandidates(res) {
   $('scan-result').innerHTML = html;
   $('scan-retry').onclick = () => startCamera();
   $('scan-manual-toggle').onclick = () => { $('scan-manual-wrap').hidden = false; bindManual(); $('scan-manual').focus(); };
-  document.querySelectorAll('[data-scan-add]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.scanAdd || '', photo }));
+  document.querySelectorAll('[data-scan-add]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.scanAdd || '', photo, source: 'scan' }));
   document.querySelectorAll('[data-scan-wish]').forEach(b => b.onclick = async () => {
     await addWish({ type: b.dataset.scanWish || null, name: b.dataset.scanWish || b.dataset.name, photo, source: 'scan' });
     toast('💜 Zur Wunschliste hinzugefügt', 'success');

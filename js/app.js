@@ -6,8 +6,9 @@ import { esc, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, wa
 import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist } from './wishlist.js';
+import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.1.0';
+export const APP_VERSION = '2.2.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@ let activeTab = 'all';
 let activeSort = 'urgency';
 let pendingPhoto = null;
 let editingId = null;
+let addSource = 'form';
 let deferredInstall = null;
 
 export function getPlants() { return plants; }
@@ -119,11 +121,13 @@ function updateBadges() {
 async function markWatered(id) {
   const p = plants.find(x => x.id === id); if (!p) return;
   p.lastWatered = today(); await store.put('plants', p);
+  analytics.track('care', { kind: 'water' });
   toast(`💧 ${p.nickname || p.type} gegossen!`, 'success'); renderPlants();
 }
 async function markFertilized(id) {
   const p = plants.find(x => x.id === id); if (!p) return;
   p.lastFertilized = today(); await store.put('plants', p);
+  analytics.track('care', { kind: 'fert' });
   toast(`🌱 ${p.nickname || p.type} gedüngt!`, 'success'); renderPlants();
 }
 
@@ -143,7 +147,7 @@ function typeHint() {
 
 /** Öffnet das Formular; prefill = { type, photo, room, light, nickname } */
 export function openAddModal(prefill = {}) {
-  editingId = null;
+  editingId = null; addSource = prefill.source || 'form';
   $('form-title').textContent = 'Pflanze hinzufügen';
   $('delete-btn').hidden = true;
   $('plant-form').reset();
@@ -188,6 +192,7 @@ async function saveForm() {
     notes: $('f-notes').value.trim(), photo: pendingPhoto || null,
   };
   await store.put('plants', data);
+  if (!editingId) analytics.track('plant_added', { plant: type, source: addSource, photo: !!data.photo, room: data.room ? 'ja' : 'nein' });
   plants = await store.all('plants');
   renderPlants();
   $('form-dialog').close();
@@ -198,6 +203,7 @@ async function deleteCurrent() {
   const p = plants.find(x => x.id === editingId); if (!p) return;
   if (!await confirmDialog(`„${p.nickname || p.type}“ wirklich aus dem Pflanzenbuch löschen?`, { okText: 'Löschen', danger: true })) return;
   await store.remove('plants', p.id);
+  analytics.track('plant_deleted', { plant: p.type });
   plants = plants.filter(x => x.id !== p.id);
   renderPlants(); $('form-dialog').close(); toast('🗑 Pflanze entfernt');
 }
@@ -298,8 +304,10 @@ async function runDiagnose(p) {
     const db = PLANT_DB[p.type] || {};
     const res = await api.analyze({ mode: 'diagnose', image, context: { type: p.type, sci: db.sci, nickname: p.nickname, room: p.room, light: lightLabel(p.light) } });
     out.innerHTML = `<div class="ai-box">${miniMarkdown(res.text || '')}</div>`;
+    analytics.track('diagnose', { plant: p.type, ok: true });
   } catch (e) {
     out.innerHTML = `<div class="ai-box error">Analyse fehlgeschlagen: ${esc(e.message)}</div>`;
+    analytics.track('diagnose', { plant: p.type, ok: false });
   }
   btn.disabled = false;
 }
@@ -339,6 +347,7 @@ async function renderMore() {
   else if (Notification.permission === 'denied') { pill.textContent = 'Blockiert'; pill.className = 'status-pill warn'; sub.textContent = 'In den Browser-/Systemeinstellungen für diese App erlauben.'; }
   else { pill.textContent = 'Aus'; pill.className = 'status-pill'; sub.textContent = 'Antippen, um Erinnerungen zu erlauben.'; }
   $('share-btn').hidden = !(navigator.share && navigator.canShare);
+  $('analytics-toggle').checked = analytics.enabled;
   $('api-pill').textContent = '…'; $('api-sub').textContent = 'Prüfe Verbindung…';
   const h = await api.health();
   const apiPill = $('api-pill');
@@ -351,6 +360,7 @@ async function exportBackup(share = false) {
   const data = await store.exportAll();
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
   const name = `pflanzenpflege-${today()}.json`;
+  analytics.track('backup', { kind: share ? 'share' : 'export', plants: data.plants.length });
   if (share) {
     const file = new File([blob], name, { type: 'application/json' });
     if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Pflanzenpflege-Sicherung' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
@@ -367,6 +377,7 @@ async function importBackup(file) {
     const replace = plants.length ? !(await confirmDialog(`Sicherung mit ${n} Pflanzen gefunden. Mit vorhandenen ${plants.length} Pflanzen zusammenführen? („Abbrechen“ = vorhandene ersetzen)`, { okText: 'Zusammenführen' })) : false;
     const r = await store.importAll(data, replace ? 'replace' : 'merge');
     plants = await store.all('plants'); renderPlants(); await renderWishlist();
+    analytics.track('backup', { kind: 'import', plants: r.plants });
     toast(`⬆️ ${r.plants} Pflanzen, ${r.wishlist} Wünsche importiert`, 'success');
   } catch (e) { toast(`Import fehlgeschlagen: ${e.message}`, 'error'); }
 }
@@ -433,6 +444,8 @@ function bindEvents() {
   $('api-settings-btn').onclick = () => { $('api-base').value = api.base; $('api-token').value = api.token; $('api-dialog').showModal(); };
   $('api-save-btn').onclick = async () => { await api.save($('api-base').value, $('api-token').value); $('api-dialog').close(); const h = await api.health(); toast(h.ok ? '✔ Erkennungs-Server verbunden' : `Server nicht bereit: ${h.reason || 'nicht erreichbar'}`, h.ok ? 'success' : 'error'); renderMore(); };
   $('theme-select').onchange = e => applyTheme(e.target.value);
+  $('analytics-toggle').onchange = async e => { await analytics.setEnabled(e.target.checked); toast(e.target.checked ? 'Nutzungsstatistik an' : 'Nutzungsstatistik aus – es wird nichts mehr gesendet'); };
+  $('analytics-reset').onclick = async () => { await analytics.resetId(); toast('Neue zufällige Kennung erzeugt', 'success'); };
   $('install-btn').onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; $('install-banner').hidden = true; };
   $('install-dismiss').onclick = () => { $('install-banner').hidden = true; store.setSetting('installDismissed', true); };
   document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
@@ -448,6 +461,7 @@ async function init() {
   const migrated = await store.migrateLegacy();
   if (migrated) toast(`🌿 ${migrated} Pflanzen aus der alten Version übernommen`, 'success');
   await api.load();
+  await analytics.init(APP_VERSION);
   plants = await store.all('plants');
   for (const p of plants) { if (!PLANT_DB[p.type]) { const fixed = resolvePlantName(p.type) || (p.type === 'Leuchterblume' ? 'Klivie' : null); if (fixed) { p.type = fixed; await store.put('plants', p); } } }
   bindEvents();
@@ -458,5 +472,6 @@ async function init() {
   registerSW();
   api.health().then(() => { /* Status für Scan vorbereiten */ });
   checkAndNotify();
+  analytics.track('app_open', { plants: plants.length, wishes: getWishlist().length, standalone: matchMedia('(display-mode: standalone)').matches, theme: document.documentElement.dataset.theme || 'auto', view: view || 'plants' });
 }
 init();

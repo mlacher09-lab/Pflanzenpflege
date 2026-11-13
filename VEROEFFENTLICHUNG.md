@@ -57,6 +57,16 @@ Die PWA kann als Store-App verpackt werden; der Code bleibt derselbe.
 
 Für beide Stores brauchst du: Icons (vorhanden, `icons/`), Screenshots (siehe `test/screenshots/`), Kurzbeschreibung, Datenschutzerklärungs-URL, bei Apple ein Mac mit Xcode zum Hochladen.
 
+## 6a. Nutzungsstatistik einrichten (optional)
+
+1. Vercel → dein Projekt → Reiter **Storage** → **Create Database** → **Neon** (Postgres) → kostenlosen Plan wählen → Region Frankfurt → **Create** und mit dem Projekt verbinden. Vercel trägt `DATABASE_URL` automatisch in die Environment Variables ein.
+2. Unter **Environment Variables** zusätzlich `ADMIN_TOKEN` anlegen: ein langer, zufälliger Code nur für dich.
+3. Unter **Deployments** ein **Redeploy** auslösen.
+4. Auswertung: `https://deine-app.vercel.app/stats.html` öffnen und den Admin-Code eingeben. Zeitraum wählbar (7 Tage bis 1 Jahr).
+5. In `datenschutz.html` im Abschnitt 5a den Datenbankanbieter und die Aufbewahrungsdauer eintragen.
+
+Alternative ohne Vercel-Marketplace: ein kostenloses Projekt bei supabase.com oder neon.tech anlegen, dort die Verbindungs-URL kopieren und als `DATABASE_URL` eintragen.
+
 ## 7. Betrieb
 
 - **Kosten:** Vercel Hobby-Plan kostenlos. Claude-API nach Verbrauch (Opus 5.5: 4 USD pro Million Eingabe-Token); ein Scan kostet grob 1–2 Cent.
