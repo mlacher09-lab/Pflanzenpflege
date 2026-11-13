@@ -1,0 +1,16 @@
+{
+  "name": "pflanzenpflege",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Pflanzenbuch mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste – als installierbare Web-App.",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "icons": "node scripts/make-icons.mjs",
+    "test": "node test/e2e.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pflanzenpflege</title>
+<meta name="description" content="Pflanzenbuch mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste – auf allen Geräten.">
+<meta name="theme-color" content="#2D6A4F" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C1710" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pflanzen">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header id="hdr">
+  <div class="hdr-row">
+    <div class="hdr-logo">
+      <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="15" cy="15" r="15" fill="var(--accent-l)"/>
+        <path d="M15 24V14" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M15 18C13 14 9 13 9 13C9 13 10 18 15 18Z" fill="var(--accent)" opacity=".8"/>
+        <path d="M15 15C17 11 21 10 21 10C21 10 20 15 15 15Z" fill="var(--accent)"/>
+      </svg>
+      <h1 id="hdr-title">Pflanzenpflege</h1>
+    </div>
+    <div class="hdr-btns">
+      <button class="icon-btn" id="notif-btn" title="Pflegehinweise" aria-label="Pflegehinweise">🔔<span class="badge" id="notif-badge" hidden>0</span></button>
+      <button class="btn-accent" id="add-btn" data-action="add-plant"><span style="font-size:18px;line-height:1">+</span> Pflanze</button>
+    </div>
+  </div>
+  <div class="tabs-row" id="plants-tabs">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="all">Alle</button>
+      <button class="tab" data-tab="water">💧 Gießen</button>
+      <button class="tab" data-tab="fert">🌱 Düngen</button>
+      <button class="tab" data-tab="rooms">📍 Nach Raum</button>
+    </div>
+    <select id="sort-select" class="select-sm" aria-label="Sortierung">
+      <option value="urgency">Dringlichkeit</option>
+      <option value="water">💧 Gießfälligkeit</option>
+      <option value="fert">🌱 Düngfälligkeit</option>
+      <option value="name">A–Z</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <!-- PFLANZENBUCH -->
+  <section id="view-plants" class="view">
+    <div id="install-banner" hidden>
+      <span>📲 <strong>Als App installieren</strong> – schneller Zugriff vom Startbildschirm, auch offline.</span>
+      <button class="btn-primary btn-sm" id="install-btn">Installieren</button>
+      <button class="close-btn" id="install-dismiss" aria-label="Ausblenden">✕</button>
+    </div>
+    <div id="summary" hidden></div>
+    <div id="plant-grid"></div>
+    <div id="empty" class="empty" hidden>
+      <div class="empty-icon">🌿</div>
+      <h2>Dein Pflanzenbuch ist leer</h2>
+      <p>Füge deine erste Zimmerpflanze hinzu – per Scan mit der Kamera oder aus der Pflanzenliste.</p>
+      <div class="row">
+        <button class="btn-primary" data-nav="scan">📷 Pflanze scannen</button>
+        <button class="btn-ghost" data-action="add-plant">Aus Liste hinzufügen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCAN -->
+  <section id="view-scan" class="view" hidden>
+    <h2 class="page-title">Pflanzenscan</h2>
+    <p class="page-sub">Fotografiere eine Pflanze, um sie zu erkennen, ihren Zustand zu prüfen und direkt zu übernehmen.</p>
+    <div class="scan-stage" id="scan-stage">
+      <video id="scan-video" autoplay playsinline muted hidden></video>
+      <img id="scan-photo" alt="Aufgenommenes Foto" hidden>
+      <div class="scan-placeholder" id="scan-placeholder">
+        <div class="big">📷</div>
+        <div id="scan-placeholder-text">Kamera wird gestartet…</div>
+      </div>
+      <div class="scan-overlay" id="scan-overlay" hidden>
+        <div class="scan-frame"></div>
+        <div class="scan-hint">Pflanze mittig ins Bild – Blätter gut sichtbar</div>
+      </div>
+    </div>
+    <div class="scan-controls">
+      <button class="icon-btn" id="scan-flip" title="Kamera wechseln" aria-label="Kamera wechseln">🔄</button>
+      <button class="shutter" id="scan-shutter" aria-label="Foto aufnehmen">●</button>
+      <button class="icon-btn" id="scan-pick" title="Foto aus Galerie" aria-label="Foto aus Galerie">🖼</button>
+      <input type="file" id="scan-file" accept="image/*" capture="environment" hidden>
+    </div>
+    <div id="scan-result"></div>
+  </section>
+
+  <!-- FINDER -->
+  <section id="view-finder" class="view" hidden>
+    <h2 class="page-title">Standort-Finder</h2>
+    <p class="page-sub">Welche Pflanze passt an diesen Platz? Beschreibe die Bedingungen – die Treffer werden nach Eignung sortiert.</p>
+    <form id="finder-form" class="card finder-form">
+      <div>
+        <label class="form-label" for="fd-room">Raum (setzt typische Werte vor)</label>
+        <select id="fd-room" class="input"><option value="">– frei wählen –</option></select>
+      </div>
+      <div>
+        <span class="form-label">Lichtverhältnisse am Platz</span>
+        <div class="seg" id="fd-light"></div>
+        <div class="hint" id="fd-light-hint"></div>
+      </div>
+      <div>
+        <span class="form-label">Luftfeuchte</span>
+        <div class="seg">
+          <label><input type="radio" name="fd-hum" value="1"><span>Trocken (Heizungsluft)</span></label>
+          <label><input type="radio" name="fd-hum" value="2" checked><span>Normal</span></label>
+          <label><input type="radio" name="fd-hum" value="3"><span>Feucht (Bad, Küche)</span></label>
+        </div>
+      </div>
+      <div>
+        <span class="form-label">Temperatur</span>
+        <div class="seg">
+          <label><input type="radio" name="fd-temp" value="cool"><span>Kühl (unter 18°C)</span></label>
+          <label><input type="radio" name="fd-temp" value="normal" checked><span>Normal (18–24°C)</span></label>
+          <label><input type="radio" name="fd-temp" value="warm"><span>Warm (über 24°C)</span></label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label" for="fd-size">Platz / Größe</label>
+          <select id="fd-size" class="input">
+            <option value="">Egal</option><option value="s">Klein (Fensterbank, Regal)</option><option value="m">Mittel (Beistelltisch)</option><option value="l">Groß (Bodenpflanze)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="fd-care">Pflegeaufwand</label>
+          <select id="fd-care" class="input">
+            <option value="3">Egal</option><option value="1">Nur pflegeleicht</option><option value="2">Leicht bis mittel</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-pet" style="width:18px;height:18px;accent-color:var(--accent)"> Haustiersicher</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-flower" style="width:18px;height:18px;accent-color:var(--accent)"> Blühend</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-air" style="width:18px;height:18px;accent-color:var(--accent)"> Luftreinigend</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-owned" style="width:18px;height:18px;accent-color:var(--accent)"> Bereits vorhandene ausblenden</label>
+      </div>
+    </form>
+    <div class="section-title" id="finder-count"></div>
+    <div id="finder-results"></div>
+  </section>
+
+  <!-- WUNSCHLISTE -->
+  <section id="view-wishlist" class="view" hidden>
+    <div class="row" style="justify-content:space-between;margin-bottom:4px">
+      <h2 class="page-title" style="margin:0">Wunschliste</h2>
+      <button class="btn-primary btn-sm" data-action="add-wish">+ Wunsch</button>
+    </div>
+    <p class="page-sub">Pflanzen, die du dir anschaffen möchtest – mit Notiz, Priorität und Wunsch-Standort.</p>
+    <div id="wishlist-list"></div>
+    <div id="wishlist-empty" class="empty" hidden>
+      <div class="empty-icon">💜</div>
+      <h2>Noch keine Wünsche</h2>
+      <p>Füge Pflanzen aus dem Standort-Finder, dem Scan oder manuell hinzu.</p>
+      <div class="row"><button class="btn-primary" data-nav="finder">Passende Pflanze finden</button><button class="btn-ghost" data-action="add-wish">Manuell hinzufügen</button></div>
+    </div>
+  </section>
+
+  <!-- MEHR -->
+  <section id="view-more" class="view" hidden>
+    <h2 class="page-title">Mehr</h2>
+    <p class="page-sub">Daten, Erinnerungen und Einstellungen.</p>
+
+    <div class="section-title">Daten & Geräte</div>
+    <div class="list-card">
+      <button class="list-item" id="export-btn"><span class="li-icon">⬇️</span><span class="li-text">Sicherung exportieren<div class="li-sub">JSON-Datei mit allen Pflanzen, Fotos und Wünschen</div></span></button>
+      <button class="list-item" id="share-btn" hidden><span class="li-icon">📤</span><span class="li-text">Sicherung teilen<div class="li-sub">Direkt an ein anderes Gerät senden (AirDrop, Nearby, Messenger)</div></span></button>
+      <button class="list-item" id="import-btn"><span class="li-icon">⬆️</span><span class="li-text">Sicherung importieren<div class="li-sub">Daten von einem anderen Gerät übernehmen</div></span></button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+
+    <div class="section-title">Erinnerungen</div>
+    <div class="list-card">
+      <button class="list-item" id="notif-enable-btn"><span class="li-icon">🔔</span><span class="li-text">Benachrichtigungen<div class="li-sub" id="notif-sub">Beim Öffnen der App an fällige Pflanzen erinnern</div></span><span class="status-pill" id="notif-pill">Aus</span></button>
+    </div>
+
+    <div class="section-title">KI-Erkennung</div>
+    <div class="list-card">
+      <div class="list-item" style="cursor:default"><span class="li-icon">🔍</span><span class="li-text">Erkennungs-Server<div class="li-sub" id="api-sub">Prüfe Verbindung…</div></span><span class="status-pill" id="api-pill">…</span></div>
+      <button class="list-item" id="api-settings-btn"><span class="li-icon">⚙️</span><span class="li-text">Server-Adresse & Zugangscode<div class="li-sub">Nur nötig, wenn die App getrennt vom Server gehostet wird</div></span></button>
+    </div>
+
+    <div class="section-title">Darstellung</div>
+    <div class="list-card">
+      <div class="list-item" style="cursor:default"><span class="li-icon">🌗</span><span class="li-text">Design</span>
+        <select id="theme-select" class="select-sm"><option value="auto">System</option><option value="light">Hell</option><option value="dark">Dunkel</option></select></div>
+    </div>
+
+    <div class="section-title">Über</div>
+    <div class="list-card">
+      <div class="list-item" style="cursor:default"><span class="li-icon">🌿</span><span class="li-text">Pflanzenpflege <span id="app-version" class="muted"></span><div class="li-sub">Alle Daten bleiben auf deinem Gerät. Fotos werden nur für die Erkennung an den Server gesendet.</div></span></div>
+    </div>
+  </section>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav id="nav" aria-label="Hauptnavigation">
+  <button class="nav-btn active" data-nav="plants"><span class="nav-icon">🪴</span>Pflanzen<span class="badge" id="nav-badge" hidden>0</span></button>
+  <button class="nav-btn" data-nav="scan"><span class="nav-icon">📷</span>Scan</button>
+  <button class="nav-btn" data-nav="finder"><span class="nav-icon">🔍</span>Finder</button>
+  <button class="nav-btn" data-nav="wishlist"><span class="nav-icon">💜</span>Wünsche</button>
+  <button class="nav-btn" data-nav="more"><span class="nav-icon">⋯</span>Mehr</button>
+</nav>
+
+<!-- PFLANZE HINZUFÜGEN / BEARBEITEN -->
+<dialog id="form-dialog" aria-labelledby="form-title">
+  <div class="modal-header"><span class="modal-title" id="form-title">Pflanze hinzufügen</span><button class="close-btn" data-close="form-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <form id="plant-form" novalidate>
+      <div class="form-group autocomplete">
+        <label for="f-type">Pflanzenart *</label>
+        <input id="f-type" type="text" placeholder="z. B. Monstera, Ficus, Aloe …" autocomplete="off" required>
+        <div class="ac-list" id="f-type-ac" hidden></div>
+        <div class="hint" id="f-type-hint"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="f-nick">Spitzname (optional)</label><input id="f-nick" type="text" placeholder="z. B. Monika"></div>
+        <div class="form-group"><label for="f-room">Raum</label><input id="f-room" type="text" list="room-list" placeholder="Wohnzimmer"><datalist id="room-list"></datalist></div>
+      </div>
+      <div class="form-group">
+        <span class="form-label">Lichtverhältnisse am Standort</span>
+        <div class="seg" id="f-light"></div>
+      </div>
+      <div class="form-group">
+        <span class="form-label">Foto (optional)</span>
+        <div class="photo-upload">
+          <div id="photo-placeholder">📷 Noch kein Foto</div>
+          <div id="photo-preview-wrap" hidden></div>
+        </div>
+        <input type="file" id="f-photo" accept="image/*" hidden>
+        <button type="button" class="btn-ghost btn-block" style="margin-top:8px" id="f-photo-btn">📷 Foto wählen / aufnehmen</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="f-watered">Zuletzt gegossen</label><input id="f-watered" type="date"></div>
+        <div class="form-group"><label for="f-fertilized">Zuletzt gedüngt</label><input id="f-fertilized" type="date"></div>
+      </div>
+      <details>
+        <summary class="muted" style="cursor:pointer;margin-bottom:10px">Eigene Intervalle (optional)</summary>
+        <div class="form-row">
+          <div class="form-group"><label for="f-wint">Gießen alle … Tage</label><input id="f-wint" type="number" min="1" max="90" placeholder="Standard der Art"></div>
+          <div class="form-group"><label for="f-fint">Düngen alle … Tage</label><input id="f-fint" type="number" min="1" max="180" placeholder="Standard der Art"></div>
+        </div>
+      </details>
+      <div class="form-group"><label for="f-notes">Notizen</label><textarea id="f-notes" rows="2" placeholder="Umgetopft am …, Steckling von …"></textarea></div>
+      <input type="hidden" id="f-edit-id">
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-danger" id="delete-btn" hidden>Löschen</button>
+    <span class="grow"></span>
+    <button class="btn-ghost" data-close="form-dialog">Abbrechen</button>
+    <button class="btn-primary" id="save-btn">Speichern</button>
+  </div>
+</dialog>
+
+<!-- DETAIL -->
+<dialog id="detail-dialog" aria-label="Pflanzendetails">
+  <div id="detail-hero" class="detail-hero"></div>
+  <div class="modal-header">
+    <div><div class="detail-plant-name" id="d-name"></div><div class="detail-sci" id="d-sci"></div></div>
+    <button class="close-btn" data-close="detail-dialog" aria-label="Schließen">✕</button>
+  </div>
+  <div class="modal-body" id="detail-body"></div>
+</dialog>
+
+<!-- WUNSCH -->
+<dialog id="wish-dialog" aria-labelledby="wish-title">
+  <div class="modal-header"><span class="modal-title" id="wish-title">Wunsch hinzufügen</span><button class="close-btn" data-close="wish-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <form id="wish-form" novalidate>
+      <div class="form-group autocomplete">
+        <label for="w-name">Pflanze *</label>
+        <input id="w-name" type="text" placeholder="Name oder Art" autocomplete="off" required>
+        <div class="ac-list" id="w-name-ac" hidden></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="w-room">Wunsch-Standort</label><input id="w-room" type="text" list="room-list" placeholder="z. B. Bad"></div>
+        <div class="form-group"><label for="w-prio">Priorität</label><select id="w-prio"><option value="1">Irgendwann</option><option value="2" selected>Bald</option><option value="3">Unbedingt</option></select></div>
+      </div>
+      <div class="form-group"><label for="w-note">Notiz</label><textarea id="w-note" rows="3" placeholder="Wo gesehen, Preis, Größe …"></textarea></div>
+      <input type="hidden" id="w-edit-id"><input type="hidden" id="w-type"><input type="hidden" id="w-photo">
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-danger" id="wish-delete-btn" hidden>Löschen</button>
+    <span class="grow"></span>
+    <button class="btn-ghost" data-close="wish-dialog">Abbrechen</button>
+    <button class="btn-primary" id="wish-save-btn">Speichern</button>
+  </div>
+</dialog>
+
+<!-- API-EINSTELLUNGEN -->
+<dialog id="api-dialog" aria-labelledby="api-title">
+  <div class="modal-header"><span class="modal-title" id="api-title">Erkennungs-Server</span><button class="close-btn" data-close="api-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <p class="muted" style="margin-bottom:14px">Die Pflanzenerkennung läuft über eine kleine Server-Funktion (<code>/api/analyze</code>), die deinen KI-Schlüssel sicher verwahrt. Wird die App am selben Ort gehostet, bleibt das Feld leer.</p>
+    <div class="form-group"><label for="api-base">Server-Adresse (leer = gleiche Adresse wie die App)</label><input id="api-base" type="url" placeholder="https://meine-app.vercel.app"></div>
+    <div class="form-group"><label for="api-token">Zugangscode (optional, falls auf dem Server gesetzt)</label><input id="api-token" type="password" autocomplete="off"></div>
+  </div>
+  <div class="modal-footer"><button class="btn-ghost" data-close="api-dialog">Abbrechen</button><button class="btn-primary" id="api-save-btn">Speichern & testen</button></div>
+</dialog>
+
+<!-- BESTÄTIGUNG -->
+<dialog id="confirm-dialog" aria-label="Bestätigung">
+  <div class="modal-body"><p class="confirm-msg"></p></div>
+  <div class="modal-footer"><button class="btn-ghost confirm-cancel">Abbrechen</button><button class="btn-primary confirm-ok">OK</button></div>
+</dialog>
+
+<!-- PFLEGEHINWEISE -->
+<div id="notif-panel" class="panel" hidden>
+  <div class="panel-title">🔔 Pflegehinweise</div>
+  <div id="notif-list"></div>
+</div>
+
+<div id="toast-container" aria-live="polite"></div>
+<div id="update-bar" hidden><span>Eine neue Version ist verfügbar.</span><button id="update-btn">Aktualisieren</button></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+// Standort-Finder: bewertet alle Pflanzen der Datenbank gegen die Bedingungen eines Platzes
+import { PLANT_DB, PLANT_NAMES, ROOMS, ROOM_PRESETS, LIGHT_LEVELS, HUM_LEVELS, SIZE_LEVELS, PET_LEVELS } from './plants-db.js';
+import { esc, toast } from './util.js';
+import { openAddModal, getPlants } from './app.js';
+import { addWish, getWishlist } from './wishlist.js';
+
+const $ = id => document.getElementById(id);
+const TEMP_RANGE = { cool: [14, 18], normal: [18, 24], warm: [24, 30] };
+const LIGHT_ORDER = ['shade', 'partial', 'bright', 'sun'];
+
+/**
+ * Bewertet eine Pflanze (0–100) für die gegebenen Bedingungen und erklärt die Einschätzung.
+ * criteria: { light, hum, temp, size, care, pet, flower, air }
+ */
+export function scorePlant(p, c) {
+  const reasons = [];   // [text, cls]
+  let score = 0;
+
+  // Licht (bis 45 Punkte): exakter Treffer voll, eine Stufe daneben halb
+  if (p.light.includes(c.light)) { score += 45; reasons.push([`${LIGHT_LEVELS[c.light].icon} Licht passt`, 'good']); }
+  else {
+    const idx = LIGHT_ORDER.indexOf(c.light);
+    const near = p.light.some(l => Math.abs(LIGHT_ORDER.indexOf(l) - idx) === 1);
+    if (near) { score += 20; reasons.push([idx < LIGHT_ORDER.indexOf(p.light[0]) ? 'Etwas zu dunkel' : 'Etwas zu hell', 'warn']); }
+    else { reasons.push([idx < LIGHT_ORDER.indexOf(p.light[0]) ? 'Deutlich zu dunkel' : 'Deutlich zu sonnig', 'bad']); }
+  }
+  // Luftfeuchte (bis 25): Pflanze braucht hum; Raum bietet c.hum
+  const dh = c.hum - p.hum;
+  if (dh >= 0) { score += 25; reasons.push([dh > 0 && p.hum === 1 ? 'Luftfeuchte unkritisch' : 'Luftfeuchte passt', 'good']); }
+  else if (dh === -1) { score += 12; reasons.push(['Luft etwas trocken – gelegentlich besprühen', 'warn']); }
+  else { reasons.push(['Luft zu trocken', 'bad']); }
+  // Temperatur (bis 20): Überlappung des Raumbereichs mit dem Wohlfühlbereich
+  const [lo, hi] = TEMP_RANGE[c.temp];
+  if (lo >= p.tmin && hi <= p.tmax) { score += 20; reasons.push(['🌡️ Temperatur ideal', 'good']); }
+  else if (hi > p.tmin && lo < p.tmax) { score += 10; reasons.push([lo < p.tmin ? 'Im Winter evtl. zu kühl' : 'Evtl. zu warm', 'warn']); }
+  else { reasons.push([lo < p.tmin ? 'Zu kühl' : 'Zu warm', 'bad']); }
+  // Pflegeaufwand (bis 10)
+  if (p.d <= c.care) { score += 10; if (p.d === 1) reasons.push(['Pflegeleicht', 'good']); }
+  else reasons.push(['Anspruchsvoller als gewünscht', 'warn']);
+
+  // Harte Filter
+  let excluded = null;
+  if (c.pet && p.pet !== 'safe') excluded = p.pet === 'toxic' ? 'giftig für Haustiere' : 'Verträglichkeit je nach Art';
+  if (c.size && p.size !== c.size) excluded = excluded || `Größe: ${SIZE_LEVELS[p.size]}`;
+  if (c.flower && !p.flower) excluded = excluded || 'blüht nicht';
+  if (c.air && !p.air) excluded = excluded || 'nicht als luftreinigend bekannt';
+  return { score: Math.min(100, score), reasons, excluded };
+}
+
+export function rankPlants(c, ownedTypes = new Set(), hideOwned = false) {
+  return PLANT_NAMES.map(name => ({ name, p: PLANT_DB[name], ...scorePlant(PLANT_DB[name], c) }))
+    .filter(r => !r.excluded && !(hideOwned && ownedTypes.has(r.name)))
+    .sort((a, b) => b.score - a.score || a.p.d - b.p.d || a.name.localeCompare(b.name, 'de'));
+}
+
+function readCriteria() {
+  return {
+    light: document.querySelector('input[name="fd-light"]:checked')?.value || 'bright',
+    hum: Number(document.querySelector('input[name="fd-hum"]:checked')?.value || 2),
+    temp: document.querySelector('input[name="fd-temp"]:checked')?.value || 'normal',
+    size: $('fd-size').value, care: Number($('fd-care').value || 3),
+    pet: $('fd-pet').checked, flower: $('fd-flower').checked, air: $('fd-air').checked,
+    hideOwned: $('fd-owned').checked, room: $('fd-room').value,
+  };
+}
+
+export function initFinder() {
+  $('fd-room').innerHTML += ROOMS.map(r => `<option value="${r}">${r}</option>`).join('');
+  $('fd-light').innerHTML = Object.entries(LIGHT_LEVELS).map(([k, v]) => `<label><input type="radio" name="fd-light" value="${k}" ${k === 'bright' ? 'checked' : ''}><span>${v.icon} ${v.label}</span></label>`).join('');
+  $('fd-room').onchange = e => {
+    const pre = ROOM_PRESETS[e.target.value]; if (!pre) return;
+    document.querySelectorAll('input[name="fd-hum"]').forEach(r => r.checked = Number(r.value) === pre.hum);
+    document.querySelectorAll('input[name="fd-temp"]').forEach(r => r.checked = r.value === pre.temp);
+    if (pre.pet) $('fd-pet').checked = true;
+    renderFinder();
+  };
+  $('finder-form').addEventListener('change', renderFinder);
+  $('finder-form').addEventListener('submit', e => e.preventDefault());
+}
+
+export function renderFinder() {
+  const c = readCriteria();
+  $('fd-light-hint').textContent = LIGHT_LEVELS[c.light].hint;
+  const owned = new Set(getPlants().map(p => p.type));
+  const wished = new Set(getWishlist().map(w => w.type));
+  const results = rankPlants(c, owned, c.hideOwned);
+  const good = results.filter(r => r.score >= 60);
+  $('finder-count').textContent = results.length ? `${good.length} gut passende Pflanzen${results.length > good.length ? ` · ${results.length - good.length} mit Einschränkungen` : ''}` : 'Keine Pflanze erfüllt alle Filter – lockere einen Filter.';
+  $('finder-results').innerHTML = results.slice(0, 30).map(r => {
+    const petCls = r.p.pet === 'safe' ? 'good' : r.p.pet === 'toxic' ? 'bad' : 'warn';
+    return `<div class="result">
+      <div class="emoji">${r.p.e}</div>
+      <div class="grow">
+        <div class="name">${esc(r.name)}${owned.has(r.name) ? ' <span class="chip good">vorhanden</span>' : ''}${wished.has(r.name) ? ' <span class="chip wish">gewünscht</span>' : ''}</div>
+        <div class="sci">${esc(r.p.sci)}</div>
+        <div class="chips">${r.reasons.map(([t, cls]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')}<span class="chip ${petCls}">🐾 ${PET_LEVELS[r.p.pet]}</span><span class="chip">📏 ${SIZE_LEVELS[r.p.size].split(' ')[0]}</span>${r.p.flower ? '<span class="chip">🌸 blüht</span>' : ''}${r.p.air ? '<span class="chip">🍃 luftreinigend</span>' : ''}</div>
+        <div class="result-actions">
+          <button class="btn-ghost btn-sm" data-fwish="${esc(r.name)}">💜 Wunschliste</button>
+          <button class="btn-ghost btn-sm" data-fadd="${esc(r.name)}">🪴 Habe ich</button>
+          <button class="btn-ghost btn-sm" data-finfo="${esc(r.name)}">ℹ️ Pflege</button>
+        </div>
+        <div class="ai-box" id="finfo-${esc(r.name).replace(/\W/g, '_')}" hidden></div>
+      </div>
+      <div class="score"><div class="num">${r.score}</div><div class="lbl">Punkte</div></div>
+    </div>`;
+  }).join('');
+  $('finder-results').querySelectorAll('[data-fwish]').forEach(b => b.onclick = async () => { await addWish({ type: b.dataset.fwish, name: b.dataset.fwish, room: c.room, source: 'finder' }); toast(`💜 ${b.dataset.fwish} auf die Wunschliste gesetzt`, 'success'); renderFinder(); });
+  $('finder-results').querySelectorAll('[data-fadd]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.fadd, room: c.room, light: c.light }));
+  $('finder-results').querySelectorAll('[data-finfo]').forEach(b => b.onclick = () => {
+    const p = PLANT_DB[b.dataset.finfo]; const box = $(`finfo-${b.dataset.finfo.replace(/\W/g, '_')}`);
+    box.hidden = !box.hidden;
+    box.innerHTML = `<strong>💧 Gießen</strong> alle ${p.w} Tage · <strong>🌱 Düngen</strong> alle ${p.f} Tage · <strong>☀️</strong> ${esc(p.lt)} · <strong>💦</strong> ${esc(HUM_LEVELS[p.hum])} · <strong>🌡️</strong> ${esc(p.tmp)}<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+  });
+}

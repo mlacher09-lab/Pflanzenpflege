@@ -1,0 +1,31 @@
+# Veröffentlicht die App als statische Seite auf GitHub Pages (ohne KI-Funktion – die läuft bei Vercel, siehe README).
+# Aktivieren: Repository → Settings → Pages → Source: "GitHub Actions".
+name: GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nur App-Dateien bereitstellen
+        run: |
+          mkdir -p public
+          cp -r index.html manifest.webmanifest sw.js css js icons public/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: deployment
+        uses: actions/deploy-pages@v4
