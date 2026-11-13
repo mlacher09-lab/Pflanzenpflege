@@ -5,7 +5,7 @@ import { store } from './store.js';
 export const api = {
   base: '',
   token: '',
-  status: 'unknown', // unknown | ok | none | error
+  status: 'unknown', // unknown | ok | none | token | error
   provider: null,
 
   async load() {
@@ -35,8 +35,9 @@ export const api = {
       if (!res.ok) { this.status = 'error'; return { ok: false, reason: `HTTP ${res.status}` }; }
       const data = await res.json();
       this.provider = data.provider || null;
-      this.status = data.configured ? 'ok' : 'none';
-      return { ...data, ok: !!data.configured };
+      const tokenOk = data.tokenOk !== false;
+      this.status = !data.configured ? 'none' : !tokenOk ? 'token' : 'ok';
+      return { ...data, ok: !!data.configured && tokenOk, reason: !data.configured ? 'kein Schlüssel' : !tokenOk ? 'Zugangscode fehlt oder ist falsch' : undefined };
     } catch (e) {
       this.status = 'error';
       return { ok: false, reason: e.name === 'AbortError' ? 'Zeitüberschreitung' : 'Nicht erreichbar' };

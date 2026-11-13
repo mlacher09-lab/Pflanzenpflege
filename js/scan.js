@@ -108,6 +108,8 @@ function bindManual() {
 function renderNoServer() {
   $('scan-result').innerHTML = `<div class="ai-box">${api.status === 'none'
     ? 'Der Erkennungs-Server läuft, aber es ist noch kein KI-Schlüssel hinterlegt (<strong>ANTHROPIC_API_KEY</strong>). Siehe README, Abschnitt „Pflanzenerkennung aktivieren“.'
+    : api.status === 'token'
+    ? 'Der Erkennungs-Server verlangt einen Zugangscode. Trage ihn unter „Mehr → Server-Adresse & Zugangscode“ ein.'
     : 'Kein Erkennungs-Server erreichbar. Du kannst die Pflanze trotzdem manuell zuordnen – das Foto wird übernommen. Server einrichten: „Mehr → KI-Erkennung“.'}</div>${manualBlock()}`;
   bindManual();
 }

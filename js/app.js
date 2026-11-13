@@ -7,7 +7,7 @@ import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist } from './wishlist.js';
 
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.0.1';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -344,6 +344,7 @@ async function renderMore() {
   const apiPill = $('api-pill');
   if (h.ok) { apiPill.textContent = 'Bereit'; apiPill.className = 'status-pill ok'; $('api-sub').textContent = `Verbunden${api.base ? ` mit ${api.base}` : ''} · Anbieter: ${h.provider || 'KI'}`; }
   else if (api.status === 'none') { apiPill.textContent = 'Kein Schlüssel'; apiPill.className = 'status-pill warn'; $('api-sub').textContent = 'Server erreichbar, aber ANTHROPIC_API_KEY fehlt (siehe README).'; }
+  else if (api.status === 'token') { apiPill.textContent = 'Zugangscode nötig'; apiPill.className = 'status-pill warn'; $('api-sub').textContent = api.token ? 'Der eingetragene Zugangscode ist falsch.' : 'Server bereit – bitte unten den Zugangscode eintragen.'; }
   else { apiPill.textContent = 'Offline'; apiPill.className = 'status-pill warn'; $('api-sub').textContent = `Nicht erreichbar (${h.reason || '–'}). Scan funktioniert dann nur manuell.`; }
 }
 async function exportBackup(share = false) {
@@ -430,7 +431,7 @@ function bindEvents() {
     renderMore();
   };
   $('api-settings-btn').onclick = () => { $('api-base').value = api.base; $('api-token').value = api.token; $('api-dialog').showModal(); };
-  $('api-save-btn').onclick = async () => { await api.save($('api-base').value, $('api-token').value); $('api-dialog').close(); const h = await api.health(); toast(h.ok ? '✔ Erkennungs-Server verbunden' : `Server nicht bereit: ${h.reason || 'kein Schlüssel'}`, h.ok ? 'success' : 'error'); renderMore(); };
+  $('api-save-btn').onclick = async () => { await api.save($('api-base').value, $('api-token').value); $('api-dialog').close(); const h = await api.health(); toast(h.ok ? '✔ Erkennungs-Server verbunden' : `Server nicht bereit: ${h.reason || 'nicht erreichbar'}`, h.ok ? 'success' : 'error'); renderMore(); };
   $('theme-select').onchange = e => applyTheme(e.target.value);
   $('install-btn').onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; $('install-banner').hidden = true; };
   $('install-dismiss').onclick = () => { $('install-banner').hidden = true; store.setSetting('installDismissed', true); };

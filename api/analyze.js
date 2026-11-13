@@ -67,10 +67,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.statusCode = 204; return res.end(); }
 
   const configured = !!process.env.ANTHROPIC_API_KEY;
-  if (req.method === 'GET') return send(res, 200, { ok: true, configured, provider: configured ? 'Claude' : null, model: configured ? MODEL : null });
+  const tokenRequired = !!process.env.APP_TOKEN;
+  const tokenOk = !tokenRequired || req.headers['x-app-token'] === process.env.APP_TOKEN;
+  if (req.method === 'GET') return send(res, 200, { ok: true, configured, tokenRequired, tokenOk, provider: configured ? 'Claude' : null, model: configured && tokenOk ? MODEL : null });
   if (req.method !== 'POST') return send(res, 405, { error: 'Methode nicht erlaubt' });
 
-  if (process.env.APP_TOKEN && req.headers['x-app-token'] !== process.env.APP_TOKEN) return send(res, 401, { error: 'Zugangscode fehlt oder ist falsch' });
+  if (!tokenOk) return send(res, 401, { error: 'Zugangscode fehlt oder ist falsch' });
   if (!configured) return send(res, 503, { error: 'ANTHROPIC_API_KEY ist auf dem Server nicht gesetzt' });
 
   let body;
