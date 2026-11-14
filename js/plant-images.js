@@ -257,5 +257,71 @@ export const PLANT_IMAGES = {
   "by": "Louise Wolff --darina 00:12, 7 May 2005 (UTC)",
   "lic": "CC BY-SA 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:Colpfl25.jpg"
+ },
+ "Tillandsie": {
+  "f": "tillandsie.jpg",
+  "by": "Dick Culbert from Gibsons, B.C., Canada",
+  "lic": "CC BY 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Tillandsia_cossonii_(25177322105).jpg"
+ },
+ "Weihnachtsstern": {
+  "f": "weihnachtsstern.jpg",
+  "by": "Frank Vincentz",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_(Barlovento)_04.jpg"
+ },
+ "Begonie": {
+  "f": "begonie.jpg",
+  "by": "The original uploader was Hanson59 at German Wikipedia.",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Begonie.jpg"
+ },
+ "Zebrapflanze": {
+  "f": "zebrapflanze.jpg",
+  "by": "WayneRay",
+  "lic": "CC0",
+  "url": "https://commons.wikimedia.org/wiki/File:AphelandraSquarrosaWPC_edit.jpg"
+ },
+ "Christusdorn": {
+  "f": "christusdorn.jpg",
+  "by": "Curtis",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_milii_var._milii.jpg"
+ },
+ "Monstera Variegata": {
+  "f": "monstera-variegata.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa2.jpg"
+ },
+ "Monstera adansonii": {
+  "f": "monstera-adansonii.jpg",
+  "by": "KENPEI",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Monstera_friedrichsthalii2.jpg"
+ },
+ "Mini-Monstera": {
+  "f": "mini-monstera.jpg",
+  "by": "Jule.Kat",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Rhapidophora_Tetrasperma.jpg"
+ },
+ "Philodendron Birkin": {
+  "f": "philodendron-birkin.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
+ },
+ "Philodendron Pink Princess": {
+  "f": "philodendron-pink-princess.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
+ },
+ "Philodendron Micans": {
+  "f": "philodendron-micans.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
  }
 };

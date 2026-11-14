@@ -342,5 +342,93 @@
   "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
   "url": "https://commons.wikimedia.org/wiki/File:Colpfl25.jpg",
   "src": "de:Fittonia albivenis"
+ },
+ "Tillandsie": {
+  "f": "tillandsie.jpg",
+  "by": "Dick Culbert from Gibsons, B.C., Canada",
+  "lic": "CC BY 2.0",
+  "licUrl": "https://creativecommons.org/licenses/by/2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Tillandsia_cossonii_(25177322105).jpg",
+  "src": "de:Tillandsien"
+ },
+ "Weihnachtsstern": {
+  "f": "weihnachtsstern.jpg",
+  "by": "Frank Vincentz",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_pulcherrima_(Barlovento)_04.jpg",
+  "src": "de:Weihnachtsstern (Pflanze)"
+ },
+ "Begonie": {
+  "f": "begonie.jpg",
+  "by": "The original uploader was Hanson59 at German Wikipedia.",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Begonie.jpg",
+  "src": "de:Begonien"
+ },
+ "Zebrapflanze": {
+  "f": "zebrapflanze.jpg",
+  "by": "WayneRay",
+  "lic": "CC0",
+  "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "url": "https://commons.wikimedia.org/wiki/File:AphelandraSquarrosaWPC_edit.jpg",
+  "src": "en:Aphelandra squarrosa"
+ },
+ "Christusdorn": {
+  "f": "christusdorn.jpg",
+  "by": "Curtis",
+  "lic": "Public domain",
+  "licUrl": "",
+  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_milii_var._milii.jpg",
+  "src": "de:Christusdorn (Euphorbia)"
+ },
+ "Monstera Variegata": {
+  "f": "monstera-variegata.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa2.jpg",
+  "src": "de:Köstliches Fensterblatt"
+ },
+ "Monstera adansonii": {
+  "f": "monstera-adansonii.jpg",
+  "by": "KENPEI",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Monstera_friedrichsthalii2.jpg",
+  "src": "de:Fensterblätter"
+ },
+ "Mini-Monstera": {
+  "f": "mini-monstera.jpg",
+  "by": "Jule.Kat",
+  "lic": "CC BY-SA 4.0",
+  "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Rhapidophora_Tetrasperma.jpg",
+  "src": "de:Rhaphidophora tetrasperma"
+ },
+ "Philodendron Birkin": {
+  "f": "philodendron-birkin.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "licUrl": "https://creativecommons.org/licenses/by/3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg",
+  "src": "de:Philodendren"
+ },
+ "Philodendron Pink Princess": {
+  "f": "philodendron-pink-princess.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "licUrl": "https://creativecommons.org/licenses/by/3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg",
+  "src": "de:Philodendren"
+ },
+ "Philodendron Micans": {
+  "f": "philodendron-micans.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "licUrl": "https://creativecommons.org/licenses/by/3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg",
+  "src": "de:Philodendren"
  }
 }
