@@ -39,9 +39,9 @@ export const PLANT_IMAGES = {
  },
  "Drachenbaum": {
   "f": "drachenbaum.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_080417-4081_Dracaena_marginata.jpg"
+  "by": "BotBln",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Dracaena_marginata_IndoorPlant_0605k.jpg"
  },
  "Dieffenbachie": {
   "f": "dieffenbachie.jpg",
@@ -57,15 +57,15 @@ export const PLANT_IMAGES = {
  },
  "Einblatt": {
   "f": "einblatt.jpg",
-  "by": "Unknown authorUnknown author",
-  "lic": "Public domain",
-  "url": "https://commons.wikimedia.org/wiki/File:Anthurium_dechardi_24-269.jpg"
+  "by": "Mark voll",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:IMG_20151203_Spathiphyllum_2.jpg"
  },
  "Elefantenfuß": {
   "f": "elefantenfuss.jpg",
-  "by": "Berthold Werner",
-  "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Nolina_Menton.JPG"
+  "by": "Tangopaso",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Beaucarnea_recurvata_D1706.jpg"
  },
  "Birkenfeige": {
   "f": "birkenfeige.jpg",
@@ -75,9 +75,9 @@ export const PLANT_IMAGES = {
  },
  "Gummibaum": {
   "f": "gummibaum.jpg",
-  "by": "unbekannt",
+  "by": "Mokkie",
   "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Ficus_elastica1.jpg"
+  "url": "https://commons.wikimedia.org/wiki/File:Rubber_Plant_(Ficus_elastica_%27Robusta%27).jpg"
  },
  "Geigenfeige": {
   "f": "geigenfeige.jpg",
@@ -117,15 +117,15 @@ export const PLANT_IMAGES = {
  },
  "Glückskastanie": {
   "f": "glueckskastanie.jpg",
-  "by": "mauroguanandi",
-  "lic": "CC BY 2.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Pachira_aquatica_Tree.jpg"
+  "by": "DC",
+  "lic": "CC BY 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Pachira_aquatica_france.jpg"
  },
  "Kokospalme": {
   "f": "kokospalme.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_031209-0059_Cocos_nucifera.jpg"
+  "by": "Douglas Goldman",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:CocosSeedling.jpg"
  },
  "Klivie": {
   "f": "klivie.jpg",
@@ -159,15 +159,15 @@ export const PLANT_IMAGES = {
  },
  "Sukkulente": {
   "f": "sukkulente.jpg",
-  "by": "Raul654",
-  "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Split_Aloe.jpg"
+  "by": "Querle",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Two_potted_succulents.jpg"
  },
  "Geldbaum": {
   "f": "geldbaum.jpg",
-  "by": "Frank Vincentz",
-  "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Yaiza_Fem%C3%A9s_-_Plaza_San_Marcial_-_Crassula_ovata_02_ies.jpg"
+  "by": "Sabina Bajracharya",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Crassula_ovata_(potted,_Nepal)_02.jpg"
  },
  "Usambaraveilchen": {
   "f": "usambaraveilchen.jpg",
@@ -189,15 +189,15 @@ export const PLANT_IMAGES = {
  },
  "Kentia-Palme": {
   "f": "kentia-palme.jpg",
-  "by": "Black Diamond Images",
-  "lic": "CC BY 2.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Howea_forsteriana_Lord_Howe_Island.jpg"
+  "by": "Krzysztof Ziarnek, Kenraiz",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Howea_forsteriana_kz01.jpg"
  },
  "Goldfruchtpalme": {
   "f": "goldfruchtpalme.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_050107-2890_Chrysalidocarpus_lutescens.jpg"
+  "by": "KENPEI",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Dypsis_lutescens1.jpg"
  },
  "Zimmerfarn": {
   "f": "zimmerfarn.jpg",
@@ -447,9 +447,9 @@ export const PLANT_IMAGES = {
  },
  "Ficus Audrey": {
   "f": "ficus-audrey.jpg",
-  "by": "Ahoerstemeier",
-  "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Banyantree.jpg"
+  "by": "Tangopaso",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Ficus_benghalensis_audrey.jpg"
  },
  "Keulenlilie": {
   "f": "keulenlilie.jpg",
@@ -489,9 +489,9 @@ export const PLANT_IMAGES = {
  },
  "Zimmertanne": {
   "f": "zimmertanne.jpg",
-  "by": "John Tann from Sydney, Australia",
-  "lic": "CC BY 2.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Norfolk_Island_pine_(3393883103).jpg"
+  "by": "alexbarnard",
+  "lic": "CC BY 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Norfolk_Island_Araucaria_sapling_on_Norfolk_Island.jpg"
  },
  "Zimmerahorn": {
   "f": "zimmerahorn.jpg",
@@ -513,15 +513,15 @@ export const PLANT_IMAGES = {
  },
  "Fischschwanzpalme": {
   "f": "fischschwanzpalme.jpg",
-  "by": "Aftabbanoori",
-  "lic": "CC BY-SA 4.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Caryota_Mitis_tree_in_Bagh-e-Jinnah,_Lahore.jpg"
+  "by": "Bernard DUPONT from FRANCE",
+  "lic": "CC BY-SA 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Fishtail_Palm_(Caryota_mitis)_young_shoot_(14963775144).jpg"
  },
  "Dreikantige Wolfsmilch": {
   "f": "dreikantige-wolfsmilch.jpg",
-  "by": "Frank Vincentz",
-  "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:T%C3%ADas-Yaiza_-_LZ-2-LZ-706_-_Euphorbia_trigona_02_ies.jpg"
+  "by": "Photo by David J. Stang",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_trigona_0zz.jpg"
  },
  "Echeverie": {
   "f": "echeverie.jpg",
@@ -585,15 +585,15 @@ export const PLANT_IMAGES = {
  },
  "Zitronenbaum": {
   "f": "zitronenbaum.jpg",
-  "by": "André Karwath aka Aka",
-  "lic": "CC BY-SA 2.5",
-  "url": "https://commons.wikimedia.org/wiki/File:Lemon.jpg"
+  "by": "Eiku",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Citrus_limon_seedling,_about_2_years_old.jpg"
  },
  "Avocado": {
   "f": "avocado.jpg",
-  "by": "B.navez",
+  "by": "Max Ronnersjö",
   "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Persea_americana_fruit_2.JPG"
+  "url": "https://commons.wikimedia.org/wiki/File:Avocado_sprout.jpg"
  },
  "Ananas": {
   "f": "ananas.jpg",
