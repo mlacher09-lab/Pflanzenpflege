@@ -2,13 +2,13 @@
 import { PLANT_DB, PLANT_NAMES, ROOMS, LIGHT_LEVELS, LEGACY_LIGHT, PET_LEVELS, resolvePlantName, searchPlants, seasonalTips, season, SEASON_NAME, SEASON_ICON } from './plants-db.js';
 import { store, uid } from './store.js';
 import { api } from './api.js';
-import { esc, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
+import { esc, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
 import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist } from './wishlist.js';
 import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.3.0';
+export const APP_VERSION = '2.4.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ export function navigate(view, { push = true } = {}) {
   $('plants-tabs').hidden = view !== 'plants';
   $('add-btn').hidden = view !== 'plants';
   $('hdr-title').textContent = TITLES[view];
+  if (view === 'plants') requestAnimationFrame(updateTabFade);
   if (view === 'scan') onScanShow();
   if (view === 'finder') renderFinder();
   if (view === 'wishlist') renderWishlist();
@@ -45,20 +46,28 @@ export function navigate(view, { push = true } = {}) {
   window.scrollTo({ top: 0 });
 }
 
+// Kategorienleiste: weicher Rand zeigt an, dass sich weitere Kategorien seitlich verbergen
+function updateTabFade() {
+  const tabs = document.querySelector('#plants-tabs .tabs');
+  const max = tabs.scrollWidth - tabs.clientWidth;
+  tabs.classList.toggle('fade-l', tabs.scrollLeft > 2);
+  tabs.classList.toggle('fade-r', max > 2 && tabs.scrollLeft < max - 2);
+}
+
 // ─── RENDER: PFLANZENBUCH ────────────────────────────────────────────
 const CIRC = 2 * Math.PI * 27;
-function ring(icon, title, ok, total) {
+function ring(kind, icon, title, ok, total) {
   const frac = total === 0 ? 1 : ok / total;
   const color = frac >= 1 ? 'var(--ok)' : frac >= .5 ? 'var(--soon)' : 'var(--overdue)';
   const sub = total === 0 ? 'Keine Pflanzen' : frac === 1 ? 'Alle versorgt ✓' : `${total - ok} ${total - ok === 1 ? 'Pflanze braucht' : 'Pflanzen brauchen'} Aufmerksamkeit`;
-  return `<div class="ring-card"><div class="ring-wrap"><svg viewBox="0 0 64 64"><circle class="ring-track" cx="32" cy="32" r="27"/><circle class="ring-fill" cx="32" cy="32" r="27" stroke="${color}" stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${(CIRC * (1 - frac)).toFixed(1)}"/></svg><div class="ring-label">${ok}<span style="opacity:.55;font-size:10px">/${total}</span><small>${icon}</small></div></div><div class="ring-info"><h3>${title}</h3><p>${sub}</p></div></div>`;
+  return `<button type="button" class="ring-card" data-care="${kind}" aria-label="${title}: ${ok} von ${total} versorgt – Übersicht öffnen"><div class="ring-wrap"><svg viewBox="0 0 64 64"><circle class="ring-track" cx="32" cy="32" r="27"/><circle class="ring-fill" cx="32" cy="32" r="27" stroke="${color}" stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${(CIRC * (1 - frac)).toFixed(1)}"/></svg><div class="ring-label">${ok}<span style="opacity:.55;font-size:10px">/${total}</span><small>${icon}</small></div></div><div class="ring-info"><h3>${title}</h3><p>${sub}</p></div><span class="ring-chevron" aria-hidden="true">›</span></button>`;
 }
 function renderSummary() {
   const el = $('summary');
   if (!plants.length) { el.hidden = true; return; }
   el.hidden = false;
-  el.innerHTML = ring('💧', 'Gießstatus', plants.filter(p => waterStatus(p).cls === 'ok').length, plants.length)
-    + ring('🌱', 'Düngerstatus', plants.filter(p => fertStatus(p).cls === 'ok').length, plants.length);
+  el.innerHTML = ring('water', '💧', 'Gießstatus', plants.filter(p => waterStatus(p).cls === 'ok').length, plants.length)
+    + ring('fert', '🌱', 'Düngerstatus', plants.filter(p => fertStatus(p).cls === 'ok').length, plants.length);
 }
 function sorted(list) {
   const c = [...list];
@@ -96,6 +105,7 @@ function plantCard(p) {
 }
 export function renderPlants() {
   renderSummary();
+  if ($('care-dialog').open) renderCare();
   const grid = $('plant-grid'), empty = $('empty');
   if (!plants.length) { grid.innerHTML = ''; empty.hidden = false; updateBadges(); return; }
   empty.hidden = true;
@@ -110,6 +120,49 @@ export function renderPlants() {
     grid.innerHTML = list.length ? list.map(plantCard).join('') : `<p class="muted" style="grid-column:1/-1;padding:20px 0">Keine Pflanzen in dieser Kategorie – alles versorgt. 🌿</p>`;
   }
   updateBadges();
+}
+
+// ─── PFLEGE-ÜBERSICHT (aus den Statuskreisen) ────────────────────────
+let careKind = 'water';
+const CARE = {
+  water: { title: '💧 Gießen', status: p => waterStatus(p), attr: 'data-water', btn: '💧 Gegossen', all: '💧 Alle als gegossen markieren', done: 'Alle Pflanzen sind gegossen. 🌿', field: 'lastWatered', verb: 'gegossen' },
+  fert:  { title: '🌱 Düngen', status: p => fertStatus(p),  attr: 'data-fert',  btn: '🌱 Gedüngt',   all: '🌱 Alle als gedüngt markieren',   done: 'Alle Pflanzen sind versorgt. 🌿', field: 'lastFertilized', verb: 'gedüngt' },
+};
+const careDue = kind => plants.filter(p => CARE[kind].status(p).cls !== 'ok').sort((a, b) => CARE[kind].status(a).days - CARE[kind].status(b).days);
+function careRow(p, kind) {
+  const st = CARE[kind].status(p), img = p.photo || plantImg(p.type);
+  return `<div class="care-item">
+    <button type="button" class="care-item-main" data-open="${p.id}">
+      <span class="care-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : (PLANT_DB[p.type]?.e || '🪴')}</span>
+      <span class="care-item-text"><span class="care-item-name">${esc(p.nickname || p.type)}</span><span class="care-item-st ${st.cls}">${st.text}${p.room ? ` · 📍 ${esc(p.room)}` : ''}</span></span>
+    </button>
+    <button type="button" class="action-btn ${kind} care-item-btn" ${CARE[kind].attr}="${p.id}">${CARE[kind].btn}</button>
+  </div>`;
+}
+function renderCare() {
+  const k = CARE[careKind], due = careDue(careKind);
+  const overdue = due.filter(p => k.status(p).cls === 'overdue').length;
+  $('care-title').textContent = k.title;
+  $('care-sub').textContent = due.length ? `${due.length} ${due.length === 1 ? 'Pflanze' : 'Pflanzen'} fällig${overdue ? ` · ${overdue} überfällig` : ''}` : `${plants.length} ${plants.length === 1 ? 'Pflanze' : 'Pflanzen'} versorgt`;
+  const upcoming = plants.filter(p => k.status(p).cls === 'ok' && k.status(p).next).sort((a, b) => k.status(a).days - k.status(b).days).slice(0, 5);
+  const paused = careKind === 'fert' && plants.some(fertSeasonPaused);
+  $('care-body').innerHTML = (due.length ? due.map(p => careRow(p, careKind)).join('') : `<div class="care-empty"><div class="empty-icon">✅</div><p>${k.done}</p></div>`)
+    + (paused ? `<p class="muted care-note">${SEASON_ICON[season()]} ${currentSeasonName()}pause: Die meisten Pflanzen werden jetzt nicht gedüngt – die Intervalle passen sich automatisch an die Jahreszeit an.</p>` : '')
+    + (upcoming.length ? `<div class="section-title">Als Nächstes</div>${upcoming.map(p => `<button type="button" class="care-next" data-open="${p.id}"><span>${esc(p.nickname || p.type)}</span><span class="muted">${fmtDate(k.status(p).next)}</span></button>`).join('')}` : '');
+  $('care-footer').hidden = due.length < 2;
+  $('care-all-btn').textContent = k.all;
+}
+function openCare(kind) { careKind = kind; renderCare(); $('care-dialog').showModal(); }
+async function careAll() {
+  const k = CARE[careKind], due = careDue(careKind);
+  if (!due.length) return;
+  if (!await confirmDialog(`${due.length} Pflanzen als ${k.verb} markieren?`, { okText: 'Ja, alle' })) return;
+  const d = today();
+  for (const p of due) p[k.field] = d;
+  await store.putMany('plants', due);
+  analytics.track('care', { kind: careKind, bulk: due.length });
+  toast(`${careKind === 'water' ? '💧' : '🌱'} ${due.length} Pflanzen ${k.verb}!`, 'success');
+  renderPlants();
 }
 function updateBadges() {
   const count = plants.filter(p => urgencyClass(p) !== 'ok').length;
@@ -142,7 +195,7 @@ function setPhotoPreview(dataURL) {
 function setLight(val) { document.querySelectorAll('input[name="light"]').forEach(r => r.checked = r.value === val); }
 function typeHint() {
   const key = resolvePlantName($('f-type').value);
-  $('f-type-hint').textContent = key ? `${PLANT_DB[key].e} ${key} · ${PLANT_DB[key].sci} · gießen alle ${PLANT_DB[key].w} Tage` : ($('f-type').value.trim() ? 'Unbekannte Art – bitte aus der Liste wählen oder Scan nutzen' : '');
+  $('f-type-hint').textContent = key ? `${PLANT_DB[key].e} ${key} · ${PLANT_DB[key].sci} · gießen alle ${seasonalWater(key)} Tage (${currentSeasonName()})` : ($('f-type').value.trim() ? 'Unbekannte Art – bitte aus der Liste wählen oder Scan nutzen' : '');
 }
 
 /** Öffnet das Formular; prefill = { type, photo, room, light, nickname } */
@@ -251,15 +304,15 @@ export function openDetail(id) {
   $('detail-body').innerHTML = `
     <div class="next-dates">
       <span class="next-date-chip water">💧 Gießen: <strong>${w.next ? fmtDate(w.next) : 'jetzt'}</strong></span>
-      <span class="next-date-chip fert">🌱 Düngen: <strong>${f.next ? fmtDate(f.next) : 'jetzt'}</strong></span>
+      <span class="next-date-chip fert">🌱 Düngen: <strong>${fertInterval(p) === 0 ? (fertSeasonPaused(p) ? `${currentSeasonName()}pause` : 'nicht nötig') : f.next ? fmtDate(f.next) : 'jetzt'}</strong></span>
     </div>
     <div class="chips" style="margin:-6px 0 16px">
       ${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}
       ${db.pet ? `<span class="chip ${petCls}">🐾 ${PET_LEVELS[db.pet]}</span>` : ''}${db.air ? `<span class="chip good">🍃 Luftreinigend</span>` : ''}
     </div>
     <div class="care-grid">
-      <div class="care-card"><div class="care-card-icon">💧</div><div class="care-card-label">Gießrhythmus</div><div class="care-card-val">Alle ${waterInterval(p)} Tage${p.waterInterval ? ' <span class="muted">(eigen)</span>' : ''}</div></div>
-      <div class="care-card"><div class="care-card-icon">🌱</div><div class="care-card-label">Düngeintervall</div><div class="care-card-val">${fertInterval(p) === 0 ? 'Nicht düngen' : `Alle ${fertInterval(p)} Tage`}${p.fertInterval ? ' <span class="muted">(eigen)</span>' : ''}</div></div>
+      <div class="care-card"><div class="care-card-icon">💧</div><div class="care-card-label">Gießrhythmus</div><div class="care-card-val">Alle ${waterInterval(p)} Tage <span class="muted">${p.waterInterval ? '(eigen)' : `(${currentSeasonName()})`}</span></div></div>
+      <div class="care-card"><div class="care-card-icon">🌱</div><div class="care-card-label">Düngeintervall</div><div class="care-card-val">${fertInterval(p) === 0 ? (fertSeasonPaused(p) ? `Pause <span class="muted">(${currentSeasonName()})</span>` : 'Nicht düngen') : `Alle ${fertInterval(p)} Tage <span class="muted">${p.fertInterval ? '(eigen)' : `(${currentSeasonName()})`}</span>`}</div></div>
       <div class="care-card"><div class="care-card-icon">☀️</div><div class="care-card-label">Licht</div><div class="care-card-val">${esc(db.lt || '–')}</div></div>
       <div class="care-card"><div class="care-card-icon">🌡️</div><div class="care-card-label">Temperatur</div><div class="care-card-val">${esc(db.tmp || '–')}</div></div>
       <div class="care-card"><div class="care-card-icon">💦</div><div class="care-card-label">Luftfeuchte</div><div class="care-card-val">${esc(db.hm || '–')}</div></div>
@@ -409,7 +462,7 @@ window.addEventListener('appinstalled', () => { $('install-banner').hidden = tru
 // ─── EVENTS ──────────────────────────────────────────────────────────
 function bindEvents() {
   document.addEventListener('click', async e => {
-    const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-edit],[data-dwater],[data-dfert],.tab');
+    const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-edit],[data-dwater],[data-dfert],[data-care],.tab');
     if (!t) return;
     if (t.dataset.nav) navigate(t.dataset.nav);
     else if (t.dataset.action === 'add-plant') openAddModal();
@@ -421,13 +474,18 @@ function bindEvents() {
     else if (t.dataset.dwater) { await markWatered(t.dataset.dwater); $('detail-dialog').close(); }
     else if (t.dataset.dfert) { await markFertilized(t.dataset.dfert); $('detail-dialog').close(); }
     else if (t.dataset.edit) openEditModal(t.dataset.edit);
-    else if (t.classList.contains('tab') && t.dataset.tab) { activeTab = t.dataset.tab; document.querySelectorAll('#plants-tabs .tab').forEach(x => x.classList.toggle('active', x === t)); renderPlants(); }
+    else if (t.dataset.care) openCare(t.dataset.care);
+    else if (t.classList.contains('tab') && t.dataset.tab) { activeTab = t.dataset.tab; document.querySelectorAll('#plants-tabs .tab').forEach(x => x.classList.toggle('active', x === t)); t.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }); renderPlants(); }
   });
   document.addEventListener('keydown', e => { const c = e.target.closest?.('.plant-card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(c.dataset.open); } });
   $('sort-select').onchange = e => { activeSort = e.target.value; renderPlants(); };
+  document.querySelector('#plants-tabs .tabs').addEventListener('scroll', updateTabFade, { passive: true });
+  window.addEventListener('resize', updateTabFade);
+  requestAnimationFrame(updateTabFade);
   $('save-btn').onclick = saveForm;
   $('plant-form').onsubmit = e => { e.preventDefault(); saveForm(); };
   $('delete-btn').onclick = deleteCurrent;
+  $('care-all-btn').onclick = careAll;
   $('f-photo-btn').onclick = () => $('f-photo').click();
   $('f-photo').onchange = async e => { const f = e.target.files[0]; if (f) setPhotoPreview(await compressImage(f)); };
   attachAutocomplete($('f-type'), $('f-type-ac'), typeHint);

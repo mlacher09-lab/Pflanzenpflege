@@ -284,6 +284,19 @@
   <div class="modal-body" id="detail-body"></div>
 </dialog>
 
+<!-- PFLEGE-ÜBERSICHT (Gießen / Düngen) -->
+<dialog id="care-dialog" aria-labelledby="care-title">
+  <div class="modal-header">
+    <div><span class="modal-title" id="care-title"></span><div class="muted" id="care-sub"></div></div>
+    <button class="close-btn" data-close="care-dialog" aria-label="Schließen">✕</button>
+  </div>
+  <div class="modal-body" id="care-body"></div>
+  <div class="modal-footer" id="care-footer" hidden>
+    <button class="btn-ghost" data-close="care-dialog">Schließen</button>
+    <button class="btn-primary" id="care-all-btn"></button>
+  </div>
+</dialog>
+
 <!-- WUNSCH -->
 <dialog id="wish-dialog" aria-labelledby="wish-title">
   <div class="modal-header"><span class="modal-title" id="wish-title">Wunsch hinzufügen</span><button class="close-btn" data-close="wish-dialog" aria-label="Schließen">✕</button></div>
