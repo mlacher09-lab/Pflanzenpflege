@@ -461,5 +461,23 @@ export const PLANT_IMAGES = {
   "by": "frau-doktor",
   "lic": "Public domain",
   "url": "https://commons.wikimedia.org/wiki/File:Aspidistra-elatior.jpg"
+ },
+ "Zimmeraralie": {
+  "f": "zimmeraralie.jpg",
+  "by": "No machine-readable author provided. MPF assumed (based on copyright claims).",
+  "lic": "CC BY 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Fatsia_japonica0.jpg"
+ },
+ "Efeu": {
+  "f": "efeu.jpg",
+  "by": "H. Zell",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Hedera_helix_002.JPG"
+ },
+ "Kletterfeige": {
+  "f": "kletterfeige.jpg",
+  "by": "Ixitixel",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Ficus_pumila_(Leafs).jpg"
  }
 };

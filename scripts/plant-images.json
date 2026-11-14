@@ -614,5 +614,29 @@
   "licUrl": "",
   "url": "https://commons.wikimedia.org/wiki/File:Aspidistra-elatior.jpg",
   "src": "de:Schusterpalmen"
+ },
+ "Zimmeraralie": {
+  "f": "zimmeraralie.jpg",
+  "by": "No machine-readable author provided. MPF assumed (based on copyright claims).",
+  "lic": "CC BY 2.5",
+  "licUrl": "https://creativecommons.org/licenses/by/2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Fatsia_japonica0.jpg",
+  "src": "de:Zimmeraralie"
+ },
+ "Efeu": {
+  "f": "efeu.jpg",
+  "by": "H. Zell",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Hedera_helix_002.JPG",
+  "src": "de:Gemeiner Efeu"
+ },
+ "Kletterfeige": {
+  "f": "kletterfeige.jpg",
+  "by": "Ixitixel",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Ficus_pumila_(Leafs).jpg",
+  "src": "en:Ficus pumila"
  }
 }
