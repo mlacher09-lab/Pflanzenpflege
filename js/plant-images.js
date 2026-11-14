@@ -323,5 +323,143 @@ export const PLANT_IMAGES = {
   "by": "Forest &amp; Kim Starr",
   "lic": "CC BY 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
+ },
+ "Philodendron gloriosum": {
+  "f": "philodendron-gloriosum.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
+ },
+ "Anthurium clarinervium": {
+  "f": "anthurium-clarinervium.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Anturio1.jpg"
+ },
+ "Alokasie Black Velvet": {
+  "f": "alokasie-black-velvet.jpg",
+  "by": "Obsidian Soul",
+  "lic": "CC0",
+  "url": "https://commons.wikimedia.org/wiki/File:Alocasia_reginula_(Philippines)_01.jpg"
+ },
+ "Alokasie Frydek": {
+  "f": "alokasie-frydek.jpg",
+  "by": "basic_sounds [1]",
+  "lic": "CC BY-SA 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Cajmere_@_afterhours.jpg"
+ },
+ "Gefleckte Efeutute": {
+  "f": "gefleckte-efeutute.jpg",
+  "by": "Mokkie",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Silver_Vine_(Scindapsus_pictus).jpg"
+ },
+ "Efeutute Marble Queen": {
+  "f": "efeutute-marble-queen.jpg",
+  "by": "unbekannt",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Epipremnum_pinnatum_var.jpg"
+ },
+ "Purpurtute": {
+  "f": "purpurtute.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Zingiber_malaysianum.jpg"
+ },
+ "Stromanthe Triostar": {
+  "f": "stromanthe-triostar.jpg",
+  "by": "Aleph500Dadamz",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Stromanthe_sanguinea_in_garden_in_Manaus,_Brazil.jpg"
+ },
+ "Ctenanthe": {
+  "f": "ctenanthe.jpg",
+  "by": "Benutzer:Callipides",
+  "lic": "CC BY-SA 2.0 de",
+  "url": "https://commons.wikimedia.org/wiki/File:Ctenanthe_burle-marxii.jpg"
+ },
+ "Wachsblume Hoya kerrii": {
+  "f": "wachsblume-hoya-kerrii.jpg",
+  "by": "Hobbykafe",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Hoya-kerrii_flowers_op.jpg"
+ },
+ "Erbsenpflanze": {
+  "f": "erbsenpflanze.jpg",
+  "by": "Maja Dumat from Deutschland (Germany)",
+  "lic": "CC BY 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Erbse_am_Band_(Senecio_rowleyanus)_(31772262164).jpg"
+ },
+ "Leuchterblume": {
+  "f": "leuchterblume.jpg",
+  "by": "Engeser",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Ceropegia_linearis_ssp._woodii3.jpg"
+ },
+ "Strelitzie": {
+  "f": "strelitzie.jpg",
+  "by": "User:BotBln",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Strelitzia_nicolai_KirstenboshBotGard09292010A.JPG"
+ },
+ "Bananenpflanze": {
+  "f": "bananenpflanze.jpg",
+  "by": "Raul654",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Musa_acuminata3.jpg"
+ },
+ "Glücksklee": {
+  "f": "gluecksklee.jpg",
+  "by": "Gabriel Collares",
+  "lic": "CC BY 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Oxalis_triangularis_com_folhas_verdes,_na_natureza_(Bag%C3%A9,_RS,_Brasil).jpg"
+ },
+ "Hirschzungenfarn": {
+  "f": "hirschzungenfarn.jpg",
+  "by": "Salicyna",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Asplenium_scolopendrium_2015-07-25_4998.JPG"
+ },
+ "Nestfarn": {
+  "f": "nestfarn.jpg",
+  "by": "Vincent Malloy",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Asplenium_nidus_@_Puerto_de_la_Cruz.jpg"
+ },
+ "Frauenhaarfarn": {
+  "f": "frauenhaarfarn.jpg",
+  "by": "tato grasso",
+  "lic": "CC BY-SA 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Capelvenere03(Parco_dei_Nebrodi).JPG"
+ },
+ "Geweihfarn": {
+  "f": "geweihfarn.jpg",
+  "by": "Bernard DUPONT from FRANCE",
+  "lic": "CC BY-SA 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Holttum%27s_Staghorn_-_Platycerium_holttumii_(7105572791).jpg"
+ },
+ "Buntblatt": {
+  "f": "buntblatt.jpg",
+  "by": "Photo by and (c)2006 Derek Ramsey (Ram-Man)",
+  "lic": "GFDL 1.2",
+  "url": "https://commons.wikimedia.org/wiki/File:Caladium_bicolor_%27Florida_Sweetheart%27_Plant_2220px.jpg"
+ },
+ "Medinilla": {
+  "f": "medinilla.jpg",
+  "by": "No machine-readable author provided. Alberto Salguero assumed (based on copyrigh",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Medinilla_magnifica_flor.jpg"
+ },
+ "Kolbenfaden": {
+  "f": "kolbenfaden.jpg",
+  "by": "Kurt Stüber [1]",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Aglaonema_commutatum2.jpg"
+ },
+ "Schusterpalme": {
+  "f": "schusterpalme.jpg",
+  "by": "frau-doktor",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Aspidistra-elatior.jpg"
  }
 };
