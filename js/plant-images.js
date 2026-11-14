@@ -143,5 +143,119 @@ export const PLANT_IMAGES = {
   "by": "Forest &amp; Kim Starr",
   "lic": "CC BY 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0287_Schefflera_arboricola.jpg"
+ },
+ "Monstera": {
+  "f": "monstera.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa2.jpg"
+ },
+ "Orchidee": {
+  "f": "orchidee.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:PhalaenopsisOphrysPaphiopedilumMaxillaria.jpg"
+ },
+ "Sukkulente": {
+  "f": "sukkulente.jpg",
+  "by": "Raul654",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Split_Aloe.jpg"
+ },
+ "Geldbaum": {
+  "f": "geldbaum.jpg",
+  "by": "Frank Vincentz",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Yaiza_Fem%C3%A9s_-_Plaza_San_Marcial_-_Crassula_ovata_02_ies.jpg"
+ },
+ "Usambaraveilchen": {
+  "f": "usambaraveilchen.jpg",
+  "by": "Wildfeuer",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:2007-04-20Saintpaulia_ionantha02.jpg"
+ },
+ "Yucca": {
+  "f": "yucca.jpg",
+  "by": "Daderot",
+  "lic": "CC0",
+  "url": "https://commons.wikimedia.org/wiki/File:Yucca_gigantea_(Yucca_elephantipes)_-_Fruit_and_Spice_Park_-_Homestead,_Florida_-_DSC08919.jpg"
+ },
+ "Zimmerpalme": {
+  "f": "zimmerpalme.jpg",
+  "by": "Tequila 13:54, 24 June 2007 (UTC)",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Chamaedorea_elegans.jpg"
+ },
+ "Kentia-Palme": {
+  "f": "kentia-palme.jpg",
+  "by": "Black Diamond Images",
+  "lic": "CC BY 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Howea_forsteriana_Lord_Howe_Island.jpg"
+ },
+ "Goldfruchtpalme": {
+  "f": "goldfruchtpalme.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_050107-2890_Chrysalidocarpus_lutescens.jpg"
+ },
+ "Zimmerfarn": {
+  "f": "zimmerfarn.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Nephrolepis_exaltata_indoor0705c.jpg"
+ },
+ "Zimmerlinde": {
+  "f": "zimmerlinde.jpg",
+  "by": "yakovlev.alexey from Moscow, Russia",
+  "lic": "CC BY-SA 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Sparrmannia_africana_(Malvaceae-Tiliaceae)_(36600696143).jpg"
+ },
+ "Korbmarante": {
+  "f": "korbmarante.jpg",
+  "by": "Tequila",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Ctenanthe_setosa.jpg"
+ },
+ "Pfeilwurz": {
+  "f": "pfeilwurz.jpg",
+  "by": "Ping an Chang",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:%E9%BB%91%E8%B1%B9%E7%B4%8B%E7%AB%B9%E8%8A%8BMaranta_leuconeura_var._kerchoveana20200221174028_01.jpg"
+ },
+ "Ufopflanze": {
+  "f": "ufopflanze.jpg",
+  "by": "Pepe-MS",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Peperomioides-07.JPG"
+ },
+ "Peperomie": {
+  "f": "peperomie.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_010704-0011_Peperomia_blanda.jpg"
+ },
+ "Wachsblume": {
+  "f": "wachsblume.jpg",
+  "by": "Frank Vincentz",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Hoya_carnosa_inflorescence_ies.jpg"
+ },
+ "Alokasie": {
+  "f": "alokasie.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:AlocasiaMacrorrhizaFlower.jpg"
+ },
+ "Dreimasterblume": {
+  "f": "dreimasterblume.jpg",
+  "by": "Ruestz",
+  "lic": "CC BY-SA 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Zebrina_pendula_20060521_2.JPG"
+ },
+ "Fittonie": {
+  "f": "fittonie.jpg",
+  "by": "Louise Wolff --darina 00:12, 7 May 2005 (UTC)",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Colpfl25.jpg"
  }
 };
