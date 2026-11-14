@@ -59,15 +59,15 @@ const CIRC = 2 * Math.PI * 27;
 function ring(kind, icon, title, ok, total) {
   const frac = total === 0 ? 1 : ok / total;
   const color = frac >= 1 ? 'var(--ok)' : frac >= .5 ? 'var(--soon)' : 'var(--overdue)';
-  const sub = total === 0 ? 'Keine Pflanzen' : frac === 1 ? 'Alle versorgt ✓' : `${total - ok} ${total - ok === 1 ? 'Pflanze braucht' : 'Pflanzen brauchen'} Aufmerksamkeit`;
+  const sub = total === 0 ? 'Keine Pflanzen' : frac === 1 ? 'Alles erledigt ✓' : `${total - ok} fällig – ansehen`;
   return `<button type="button" class="ring-card" data-care="${kind}" aria-label="${title}: ${ok} von ${total} versorgt – Übersicht öffnen"><div class="ring-wrap"><svg viewBox="0 0 64 64"><circle class="ring-track" cx="32" cy="32" r="27"/><circle class="ring-fill" cx="32" cy="32" r="27" stroke="${color}" stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${(CIRC * (1 - frac)).toFixed(1)}"/></svg><div class="ring-label">${ok}<span style="opacity:.55;font-size:10px">/${total}</span><small>${icon}</small></div></div><div class="ring-info"><h3>${title}</h3><p>${sub}</p></div><span class="ring-chevron" aria-hidden="true">›</span></button>`;
 }
 function renderSummary() {
   const el = $('summary');
   if (!plants.length) { el.hidden = true; return; }
   el.hidden = false;
-  el.innerHTML = ring('water', '💧', 'Gießstatus', plants.filter(p => waterStatus(p).cls === 'ok').length, plants.length)
-    + ring('fert', '🌱', 'Düngerstatus', plants.filter(p => fertStatus(p).cls === 'ok').length, plants.length);
+  el.innerHTML = ring('water', '💧', 'Gießen', plants.filter(p => waterStatus(p).cls === 'ok').length, plants.length)
+    + ring('fert', '🌱', 'Düngen', plants.filter(p => fertStatus(p).cls === 'ok').length, plants.length);
 }
 function sorted(list) {
   const c = [...list];
@@ -107,16 +107,19 @@ export function renderPlants() {
   renderSummary();
   if ($('care-dialog').open) renderCare();
   const grid = $('plant-grid'), empty = $('empty');
+  $('list-bar').hidden = !plants.length;
   if (!plants.length) { grid.innerHTML = ''; empty.hidden = false; updateBadges(); return; }
   empty.hidden = true;
   if (activeTab === 'rooms') {
     const groups = {};
+    $('list-count').textContent = `${plants.length} ${plants.length === 1 ? 'Pflanze' : 'Pflanzen'}`;
     sorted(plants).forEach(p => { (groups[p.room || 'Ohne Raum'] ||= []).push(p); });
     grid.innerHTML = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b, 'de')).map(([room, list]) =>
       `<div style="grid-column:1/-1"><div class="section-title" style="margin-top:6px">📍 ${esc(room)} <span class="muted">· ${list.length}</span></div><div id="plant-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(plantCard).join('')}</div></div>`
     ).join('');
   } else {
     const list = filtered();
+    $('list-count').textContent = activeTab === 'all' ? `${plants.length} ${plants.length === 1 ? 'Pflanze' : 'Pflanzen'}` : `${list.length} von ${plants.length} fällig`;
     grid.innerHTML = list.length ? list.map(plantCard).join('') : `<p class="muted" style="grid-column:1/-1;padding:20px 0">Keine Pflanzen in dieser Kategorie – alles versorgt. 🌿</p>`;
   }
   updateBadges();

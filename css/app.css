@@ -94,8 +94,12 @@ a { color: var(--accent); }
 .tab:hover:not(.active) { background: var(--surface2); }
 .select-sm {
   border: 1px solid var(--border); border-radius: var(--rs); background: var(--surface); color: var(--text);
-  font-size: 12px; padding: 5px 8px; white-space: nowrap; flex: 0 0 auto; max-width: 42vw;
+  font-size: 12px; padding: 5px 8px; white-space: nowrap; flex: 0 0 auto;
 }
+.list-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 12px; }
+.list-count { font-size: 13px; color: var(--text-m); font-weight: 500; }
+.sort-wrap { display: inline-flex; align-items: center; gap: 6px; color: var(--text-m); font-size: 14px; }
+.sort-wrap .select-sm { font-size: 13px; padding: 6px 8px; }
 
 /* ---------- LAYOUT ---------- */
 main { padding: 16px; max-width: 1100px; margin: 0 auto; }
@@ -365,7 +369,10 @@ a.list-item:hover { background: var(--surface2); }
   #plant-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   main { padding: 14px 16px; }
-  .ring-card { min-width: 140px; padding: 12px; }
+  .ring-card { min-width: 0; padding: 12px; gap: 10px; }
+  .ring-wrap, .ring-wrap svg { width: 56px; height: 56px; }
+  .ring-info h3 { font-size: 15px; }
+  .tab { padding: 6px 12px; }
 }
 @media (min-width: 900px) {
   body { padding-bottom: 0; padding-left: 92px; }
