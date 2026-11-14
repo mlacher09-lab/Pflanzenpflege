@@ -80,7 +80,8 @@ const top = (await page.locator('.result .name').first().textContent()).trim();
 const topScore = Number(await page.locator('.result .score .num').first().textContent());
 check(topScore >= 80, `Bester Treffer für schattiges, feuchtes Bad: ${top} (${topScore} Punkte)`);
 await page.screenshot({ path: path.join(shots, '04-finder.png'), fullPage: false });
-await page.click('.result [data-fwish]');
+await page.click('.result');
+await page.click('#finder-dlg-wish');
 await page.waitForFunction(() => document.querySelector('#finder-results').textContent.includes('gewünscht'), null, { timeout: 5000 }).catch(() => {});
 check((await page.textContent('#finder-results')).includes('gewünscht'), 'Finder markiert Wunsch');
 

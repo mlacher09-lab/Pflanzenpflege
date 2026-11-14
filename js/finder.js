@@ -105,34 +105,42 @@ export function renderFinder() {
   trackTimer = setTimeout(() => analytics.track('finder_search', { light: c.light, hum: c.hum, temp: c.temp, room: c.room, size: c.size, care: c.care, pet: c.pet, flower: c.flower, air: c.air, trend: c.trend, results: good.length, top: results[0]?.name || '' }), 2500);
   $('finder-count').textContent = results.length ? `${good.length} gut passende Pflanzen${results.length > good.length ? ` · ${results.length - good.length} mit Einschränkungen` : ''}` : 'Keine Pflanze erfüllt alle Filter – lockere einen Filter.';
   $('finder-results').innerHTML = results.slice(0, shown).map(r => {
-    const petCls = r.p.pet === 'safe' ? 'good' : r.p.pet === 'toxic' ? 'bad' : 'warn';
     const img = plantImg(r.name);
-    return `<div class="result">
-      <div class="emoji">${img ? `<img src="${img}" alt="${esc(r.name)}" loading="lazy" width="60" height="60">` : r.p.e}</div>
-      <div class="grow">
+    const preview = r.reasons.slice(0, 2);
+    return `<button type="button" class="result" data-fopen="${esc(r.name)}" aria-label="${esc(r.name)} – Details öffnen">
+      <div class="emoji">${img ? `<img src="${img}" alt="${esc(r.name)}" loading="lazy">` : r.p.e}<div class="score"><div class="num">${r.score}</div><div class="lbl">Punkte</div></div></div>
+      <div class="result-info">
         <div class="name">${esc(r.name)}${owned.has(r.name) ? ' <span class="chip good">vorhanden</span>' : ''}${wished.has(r.name) ? ' <span class="chip wish">gewünscht</span>' : ''}</div>
         <div class="sci">${esc(r.p.sci)}</div>
-        <div class="chips">${r.reasons.map(([t, cls]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')}<span class="chip ${petCls}">🐾 ${PET_LEVELS[r.p.pet]}</span><span class="chip">📏 ${SIZE_LEVELS[r.p.size].split(' ')[0]}</span>${r.p.flower ? '<span class="chip">🌸 blüht</span>' : ''}${r.p.air ? '<span class="chip">🍃 luftreinigend</span>' : ''}${r.p.trend ? '<span class="chip wish">✨ Trend</span>' : ''}${r.p.out ? '<span class="chip">🌤 Balkon</span>' : ''}</div>
-        <div class="result-actions">
-          <button class="btn-ghost btn-sm" data-fwish="${esc(r.name)}">💜 Wunschliste</button>
-          <button class="btn-ghost btn-sm" data-fadd="${esc(r.name)}">🪴 Habe ich</button>
-          <button class="btn-ghost btn-sm" data-finfo="${esc(r.name)}">ℹ️ Pflege</button>
-        </div>
-        <div class="ai-box" id="finfo-${esc(r.name).replace(/\W/g, '_')}" hidden></div>
+        <div class="chips">${preview.map(([t, cls]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')}</div>
       </div>
-      <div class="score"><div class="num">${r.score}</div><div class="lbl">Punkte</div></div>
-    </div>`;
+    </button>`;
   }).join('') + (results.length > shown
     ? `<button type="button" class="btn-ghost more-btn" id="finder-more">Mehr anzeigen <span class="muted">· noch ${results.length - shown} Treffer</span></button>`
     : '');
   const more = $('finder-more');
   if (more) more.onclick = () => { shown += PAGE; renderFinder(); };
-  $('finder-results').querySelectorAll('[data-fwish]').forEach(b => b.onclick = async () => { await addWish({ type: b.dataset.fwish, name: b.dataset.fwish, room: c.room, source: 'finder' }); toast(`💜 ${b.dataset.fwish} auf die Wunschliste gesetzt`, 'success'); renderFinder(); });
-  $('finder-results').querySelectorAll('[data-fadd]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.fadd, room: c.room, light: c.light, source: 'finder' }));
-  $('finder-results').querySelectorAll('[data-finfo]').forEach(b => b.onclick = () => {
-    const p = PLANT_DB[b.dataset.finfo]; const box = $(`finfo-${b.dataset.finfo.replace(/\W/g, '_')}`);
-    box.hidden = !box.hidden;
-    const cr = plantImgCredit(b.dataset.finfo);
-    box.innerHTML = `${plantImg(b.dataset.finfo) ? `<img src="${plantImg(b.dataset.finfo)}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:8px">` : ''}<strong>💧 Gießen</strong> alle ${seasonalWater(b.dataset.finfo)} Tage · <strong>🌱 Düngen</strong> ${p.f === 0 ? 'nicht nötig' : seasonalFert(b.dataset.finfo) === 0 ? `${currentSeasonName()}pause` : `alle ${seasonalFert(b.dataset.finfo)} Tage`} <span class="muted">(${currentSeasonName()})</span> · <strong>☀️</strong> ${esc(p.lt)} · <strong>💦</strong> ${esc(HUM_LEVELS[p.hum])} · <strong>🌡️</strong> ${esc(p.tmp)}<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>${cr ? `<div class="muted" style="font-size:11px;margin-top:6px">Bild: ${esc(cr.by)}, ${esc(cr.lic)} · <a href="${esc(cr.url)}" target="_blank" rel="noopener">Wikimedia Commons</a></div>` : ''}`;
+  $('finder-results').querySelectorAll('[data-fopen]').forEach(b => b.onclick = () => {
+    const r = results.find(x => x.name === b.dataset.fopen);
+    if (r) openFinderDetail(r, c, owned, wished);
   });
+}
+
+function openFinderDetail(r, c, owned, wished) {
+  const p = r.p, name = r.name, cr = plantImgCredit(name), img = plantImg(name);
+  const petCls = p.pet === 'safe' ? 'good' : p.pet === 'toxic' ? 'bad' : 'warn';
+  $('finder-dlg-title').textContent = `${p.e} ${name}`;
+  $('finder-dlg-body').innerHTML = `${img ? `<img src="${img}" alt="${esc(name)}" class="finder-dlg-img">` : ''}
+    <div class="sci">${esc(p.sci)} · <strong>${r.score} Punkte</strong></div>
+    <div class="chips" style="margin-top:8px">${r.reasons.map(([t, cls]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')}<span class="chip ${petCls}">🐾 ${PET_LEVELS[p.pet]}</span><span class="chip">📏 ${SIZE_LEVELS[p.size].split(' ')[0]}</span>${p.flower ? '<span class="chip">🌸 blüht</span>' : ''}${p.air ? '<span class="chip">🍃 luftreinigend</span>' : ''}${p.trend ? '<span class="chip wish">✨ Trend</span>' : ''}${p.out ? '<span class="chip">🌤 Balkon</span>' : ''}</div>
+    <div class="finder-dlg-care"><strong>💧 Gießen</strong> alle ${seasonalWater(name)} Tage · <strong>🌱 Düngen</strong> ${p.f === 0 ? 'nicht nötig' : seasonalFert(name) === 0 ? `${currentSeasonName()}pause` : `alle ${seasonalFert(name)} Tage`} <span class="muted">(${currentSeasonName()})</span> · <strong>☀️</strong> ${esc(p.lt)} · <strong>💦</strong> ${esc(HUM_LEVELS[p.hum])} · <strong>🌡️</strong> ${esc(p.tmp)}<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
+    ${cr ? `<div class="muted" style="font-size:11px">Bild: ${esc(cr.by)}, ${esc(cr.lic)} · <a href="${esc(cr.url)}" target="_blank" rel="noopener">Wikimedia Commons</a></div>` : ''}`;
+  const dlg = $('finder-dialog');
+  $('finder-dlg-wish').onclick = async () => {
+    await addWish({ type: name, name, room: c.room, source: 'finder' });
+    toast(`💜 ${name} auf die Wunschliste gesetzt`, 'success');
+    dlg.close(); renderFinder();
+  };
+  $('finder-dlg-add').onclick = () => { dlg.close(); openAddModal({ type: name, room: c.room, light: c.light, source: 'finder' }); };
+  dlg.showModal();
 }
