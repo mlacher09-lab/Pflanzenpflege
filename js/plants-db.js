@@ -263,17 +263,18 @@ export function resolvePlantName(input) {
 }
 
 /** Freitext-Suche über Namen, wissenschaftliche Namen und Aliase (für Autocomplete). */
+const fold = x => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss');
 export function searchPlants(q) {
-  const s = (q || '').trim().toLowerCase();
+  const s = fold((q || '').trim());
   if (!s) return PLANT_NAMES;
   const rank = n => {
-    const p = PLANT_DB[n], nl = n.toLowerCase();
+    const p = PLANT_DB[n], nl = fold(n), sci = fold(p.sci), al = p.aliases.map(fold);
     if (nl === s) return 0;
     if (nl.startsWith(s)) return 1;
-    if (p.aliases.some(a => a.toLowerCase().startsWith(s))) return 2;
+    if (al.some(a => a.startsWith(s))) return 2;
     if (nl.includes(s)) return 3;
-    if (p.sci.toLowerCase().startsWith(s)) return 4;
-    if (p.sci.toLowerCase().includes(s) || p.aliases.some(a => a.toLowerCase().includes(s))) return 5;
+    if (sci.startsWith(s)) return 4;
+    if (sci.includes(s) || al.some(a => a.includes(s))) return 5;
     return 9;
   };
   return PLANT_NAMES.map(n => [n, rank(n)]).filter(([, r]) => r < 9).sort((a, b) => a[1] - b[1] || a[0].length - b[0].length).map(([n]) => n);

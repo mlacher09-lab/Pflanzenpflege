@@ -96,10 +96,36 @@ a { color: var(--accent); }
   border: 1px solid var(--border); border-radius: var(--rs); background: var(--surface); color: var(--text);
   font-size: 12px; padding: 5px 8px; white-space: nowrap; flex: 0 0 auto;
 }
-.list-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 12px; }
-.list-count { font-size: 13px; color: var(--text-m); font-weight: 500; }
+.list-bar { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; }
+.list-bar .search-field { flex: 1; min-width: 0; }
+
+/* Suchfeld (Pflanzenbuch & Wunschliste) */
+.search-field { position: relative; display: flex; align-items: center; }
+.search-field input { width: 100%; height: 36px; padding: 0 34px 0 34px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; transition: border-color .15s, box-shadow .15s; }
+.search-field input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.search-field input::placeholder { color: var(--text-m); opacity: .8; }
+.search-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-l); }
+.search-icon { position: absolute; left: 12px; font-size: 13px; opacity: .6; pointer-events: none; }
+.search-clear { position: absolute; right: 4px; width: 28px; height: 28px; border: none; border-radius: 50%; background: var(--surface2); color: var(--text-m); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.search-lg { margin: 0 0 14px; }
+.search-lg input { height: 48px; border-radius: 24px; padding-left: 42px; box-shadow: var(--shadow); }
+.search-lg .search-icon { left: 16px; font-size: 16px; }
+.search-lg .search-clear { right: 10px; }
+#wish-search-results { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 4px 14px 10px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.search-head { font-size: 12px; font-weight: 600; color: var(--text-m); text-transform: uppercase; letter-spacing: .04em; padding: 10px 0 4px; }
+.search-hit { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.search-hit:last-of-type { border-bottom: none; }
+.search-thumb { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; background: var(--accent-l); display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden; }
+.search-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.search-hit-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.search-hit-name { font-weight: 600; font-size: 14.5px; }
+.search-hit-sci { font-size: 12px; color: var(--text-m); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-hit-btn { flex-shrink: 0; min-width: 44px; min-height: 40px; font-size: 17px; }
+.more-btn { display: block; width: 100%; margin-top: 8px; }
+.no-hits { padding: 20px 0; text-align: center; color: var(--text-m); font-size: 14px; }
+.no-hits p { margin-bottom: 10px; }
 .sort-wrap { display: inline-flex; align-items: center; gap: 6px; color: var(--text-m); font-size: 14px; }
-.sort-wrap .select-sm { font-size: 13px; padding: 6px 8px; }
+.sort-wrap .select-sm { font-size: 13px; padding: 0 8px; height: 36px; border-radius: 18px; }
 
 /* ---------- LAYOUT ---------- */
 main { padding: 16px; max-width: 1100px; margin: 0 auto; }
@@ -276,12 +302,16 @@ dialog::backdrop { background: rgba(0,0,0,.45); backdrop-filter: blur(2px); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- SCAN ---------- */
-.scan-stage { position: relative; background: #000; border-radius: var(--r); overflow: hidden; aspect-ratio: 3 / 4; max-height: 62vh; margin: 0 auto; max-width: 520px; }
+.scan-stage { position: relative; background: #000; border-radius: var(--r); overflow: hidden; aspect-ratio: 3 / 4; margin: 0 auto; max-width: 520px;
+  /* Kamera so hoch, dass Auslöser + Menüleiste auch bei eingeblendeter Browserleiste (Android) sichtbar bleiben */
+  max-height: calc(100vh - 300px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100svh - 300px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: 200px; }
 .scan-stage video, .scan-stage img, .scan-stage canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scan-overlay { position: absolute; inset: 0; pointer-events: none; }
 .scan-frame { position: absolute; inset: 12% 10%; border: 2px solid rgba(255,255,255,.75); border-radius: 18px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.25); }
 .scan-hint { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
-.scan-controls { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 16px 0; }
+.scan-controls { display: flex; justify-content: center; align-items: center; gap: 18px; margin: 14px 0; position: relative; z-index: 1; }
 .shutter { width: 70px; height: 70px; border-radius: 50%; border: 4px solid var(--surface); background: var(--accent); box-shadow: 0 0 0 3px var(--accent); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; }
 .shutter:disabled { opacity: .4; }
 .scan-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ddd; gap: 10px; text-align: center; padding: 20px; font-size: 14px; }
@@ -365,6 +395,10 @@ a.list-item:hover { background: var(--surface2); }
 #install-banner { display: flex; align-items: center; gap: 12px; background: var(--accent-l); border-radius: var(--r); padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
 #install-banner .btn-primary { flex-shrink: 0; }
 
+@media (max-width: 600px) {
+  .scan-sub { display: none; }
+  #view-scan .page-title { margin-bottom: 10px; }
+}
 @media (max-width: 500px) {
   #plant-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }

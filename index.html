@@ -54,7 +54,11 @@
     </div>
     <div id="summary" hidden></div>
     <div class="list-bar" id="list-bar" hidden>
-      <span class="list-count" id="list-count"></span>
+      <div class="search-field">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input type="search" id="plant-search" placeholder="Pflanzen suchen" autocomplete="off" enterkeyhint="search" aria-label="Meine Pflanzen durchsuchen">
+        <button type="button" class="search-clear" id="plant-search-clear" aria-label="Suche leeren" hidden>✕</button>
+      </div>
       <label class="sort-wrap"><span aria-hidden="true">⇅</span>
         <select id="sort-select" class="select-sm" aria-label="Sortierung">
           <option value="urgency">Dringlichkeit</option>
@@ -79,7 +83,7 @@
   <!-- SCAN -->
   <section id="view-scan" class="view" hidden>
     <h2 class="page-title">Pflanzenscan</h2>
-    <p class="page-sub">Fotografiere eine Pflanze, um sie zu erkennen, ihren Zustand zu prüfen und direkt zu übernehmen.</p>
+    <p class="page-sub scan-sub">Fotografiere eine Pflanze, um sie zu erkennen, ihren Zustand zu prüfen und direkt zu übernehmen.</p>
     <div class="scan-stage" id="scan-stage">
       <video id="scan-video" autoplay playsinline muted hidden></video>
       <img id="scan-photo" alt="Aufgenommenes Foto" hidden>
@@ -164,6 +168,12 @@
       <button class="btn-primary btn-sm" data-action="add-wish">+ Wunsch</button>
     </div>
     <p class="page-sub">Pflanzen, die du dir anschaffen möchtest – mit Notiz, Priorität und Wunsch-Standort.</p>
+    <div class="search-field search-lg">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input type="search" id="wish-search" placeholder="Pflanze suchen, z. B. Monstera" autocomplete="off" enterkeyhint="search" aria-label="Pflanze in der Datenbank suchen">
+      <button type="button" class="search-clear" id="wish-search-clear" aria-label="Suche leeren" hidden>✕</button>
+    </div>
+    <div id="wish-search-results" hidden></div>
     <div id="wishlist-list"></div>
     <div id="wishlist-empty" class="empty" hidden>
       <div class="empty-icon">💜</div>

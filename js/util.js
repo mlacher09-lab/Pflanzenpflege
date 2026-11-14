@@ -6,6 +6,9 @@ import { PLANT_IMAGES } from './plant-images.js';
 export function plantImg(type) { const i = PLANT_IMAGES[type]; return i ? `img/plants/${i.f}` : null; }
 export function plantImgCredit(type) { return PLANT_IMAGES[type] || null; }
 
+/** Kleinbuchstaben ohne Akzente/Umlaute-Punkte – damit „glucks“ auch „Glückskastanie“ findet. */
+export const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss');
+
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function today() {

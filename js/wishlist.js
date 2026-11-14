@@ -1,15 +1,51 @@
 // Wunschliste: Pflanzen, die angeschafft werden sollen – mit Notiz, Priorität, Standort und Übernahme ins Pflanzenbuch
-import { PLANT_DB, resolvePlantName } from './plants-db.js';
+import { PLANT_DB, resolvePlantName, searchPlants } from './plants-db.js';
 import { store, uid } from './store.js';
-import { esc, today, toast, confirmDialog, plantImg, seasonalWater } from './util.js';
-import { openAddModal, attachAutocomplete } from './app.js';
+import { esc, norm, today, toast, confirmDialog, plantImg, seasonalWater } from './util.js';
+import { openAddModal, attachAutocomplete, getPlants } from './app.js';
 import { setWishRef } from './scan.js';
 import { analytics } from './analytics.js';
 
 const $ = id => document.getElementById(id);
 let wishlist = [];
 let editingId = null;
+let query = '', hitLimit = 6;
 export function getWishlist() { return wishlist; }
+
+// ─── SUCHE (Pflanzendatenbank + eigene Wünsche) ──────────────────────
+/** Setzt den Suchbegriff von außen (z. B. aus der Suche im Pflanzenbuch). */
+export function setWishQuery(q) {
+  $('wish-search').value = q; query = q.trim(); hitLimit = 6;
+  $('wish-search-clear').hidden = !q;
+  renderWishlist();
+}
+function renderSearch() {
+  const box = $('wish-search-results');
+  if (!query) { box.hidden = true; box.innerHTML = ''; return; }
+  const hits = searchPlants(query);
+  const owned = new Set(getPlants().map(p => p.type));
+  const wished = new Set(wishlist.map(w => w.type));
+  box.hidden = false;
+  box.innerHTML = `<div class="search-head">${hits.length ? `${hits.length} ${hits.length === 1 ? 'Art' : 'Arten'} in der Pflanzendatenbank` : 'Keine Art in der Pflanzendatenbank gefunden'}</div>`
+    + hits.slice(0, hitLimit).map(n => {
+      const db = PLANT_DB[n], img = plantImg(n);
+      const state = wished.has(n) ? '<span class="chip wish">gewünscht</span>' : owned.has(n) ? '<span class="chip good">vorhanden</span>' : '';
+      return `<div class="search-hit">
+        <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : db.e}</span>
+        <span class="search-hit-text"><span class="search-hit-name">${esc(n)} ${state}</span><span class="search-hit-sci">${esc(db.sci)} · 💧 alle ${seasonalWater(n)} Tage</span></span>
+        ${wished.has(n) ? '' : `<button type="button" class="btn-ghost btn-sm search-hit-btn" data-swish="${esc(n)}" aria-label="${esc(n)} auf die Wunschliste">💜</button>`}
+      </div>`;
+    }).join('')
+    + (hits.length > hitLimit ? `<button type="button" class="btn-ghost more-btn" id="wish-search-more">Alle ${hits.length} Treffer zeigen</button>` : '')
+    + (!resolvePlantName(query) ? `<button type="button" class="btn-ghost more-btn" id="wish-search-custom">+ „${esc(query)}“ als eigenen Wunsch anlegen</button>` : '');
+  box.querySelectorAll('[data-swish]').forEach(b => b.onclick = async () => {
+    if (await addWish({ type: b.dataset.swish, name: b.dataset.swish, source: 'search' })) toast(`💜 ${b.dataset.swish} auf die Wunschliste gesetzt`, 'success');
+    renderWishlist();
+  });
+  const more = $('wish-search-more'); if (more) more.onclick = () => { hitLimit = Infinity; renderSearch(); };
+  const custom = $('wish-search-custom'); if (custom) custom.onclick = () => openWishModal({ name: query });
+}
+const wishMatches = w => !query || norm(query).split(/\s+/).filter(Boolean).every(t => norm([w.name, w.type, w.type && PLANT_DB[w.type]?.sci, w.room, w.note].filter(Boolean).join(' ')).includes(t));
 
 export async function initWishlist() {
   wishlist = await store.all('wishlist');
@@ -18,6 +54,10 @@ export async function initWishlist() {
   $('wish-save-btn').onclick = saveWish;
   $('wish-form').onsubmit = e => { e.preventDefault(); saveWish(); };
   $('wish-delete-btn').onclick = deleteWish;
+  const s = $('wish-search');
+  s.addEventListener('input', () => { query = s.value.trim(); hitLimit = 6; $('wish-search-clear').hidden = !s.value; renderWishlist(); });
+  s.addEventListener('keydown', e => { if (e.key === 'Enter') s.blur(); });
+  $('wish-search-clear').onclick = () => { setWishQuery(''); s.focus(); };
 }
 
 /** Fügt einen Wunsch hinzu (aus Finder/Scan). Duplikate derselben Art werden nicht doppelt angelegt. */
@@ -66,11 +106,14 @@ async function removeWish(id) { await store.remove('wishlist', id); wishlist = w
 
 export function renderWishlist() {
   const list = $('wishlist-list'), empty = $('wishlist-empty');
-  if (!wishlist.length) { list.innerHTML = ''; empty.hidden = false; return; }
+  renderSearch();
+  if (!wishlist.length) { list.innerHTML = ''; empty.hidden = !!query; return; }
   empty.hidden = true;
+  const visible = wishlist.filter(wishMatches);
+  if (query && !visible.length) { list.innerHTML = ''; return; }
   const PRIO = { 3: 'Unbedingt', 2: 'Bald', 1: 'Irgendwann' };
   const SRC = { finder: '🔍 aus dem Finder', scan: '📷 aus dem Scan', manual: '' };
-  list.innerHTML = [...wishlist].sort((a, b) => b.priority - a.priority || a.addedAt.localeCompare(b.addedAt)).map(w => {
+  list.innerHTML = (query ? `<div class="search-head">Auf deiner Wunschliste</div>` : '') + [...visible].sort((a, b) => b.priority - a.priority || a.addedAt.localeCompare(b.addedAt)).map(w => {
     const db = w.type ? PLANT_DB[w.type] : null;
     return `<div class="wish-item">
       <div class="emoji">${w.photo || (w.type && plantImg(w.type)) ? `<img src="${w.photo || plantImg(w.type)}" alt="" loading="lazy">` : (db?.e || '🌱')}</div>
