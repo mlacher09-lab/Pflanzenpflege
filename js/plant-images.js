@@ -557,5 +557,41 @@ export const PLANT_IMAGES = {
   "by": "Frank Vincentz",
   "lic": "CC BY-SA 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:T%C3%ADas-Yaiza_-_LZ-2-LZ-706_-_Euphorbia_trigona_02_ies.jpg"
+ },
+ "Echeverie": {
+  "f": "echeverie.jpg",
+  "by": "Eria Wei",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Echeveria_elegans_-_1.jpg"
+ },
+ "Haworthie": {
+  "f": "haworthie.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Haworthia_attenuata_4.jpg"
+ },
+ "Lebende Steine": {
+  "f": "lebende-steine.jpg",
+  "by": "yellowcloud",
+  "lic": "CC BY 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Lithops_2.jpg"
+ },
+ "Weihnachtskaktus": {
+  "f": "weihnachtskaktus.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:ZygocactusTruncatus.jpg"
+ },
+ "Flammendes Käthchen": {
+  "f": "flammendes-kaethchen.jpg",
+  "by": "I.Sáček, senior",
+  "lic": "CC0",
+  "url": "https://commons.wikimedia.org/wiki/File:Kalanchoe_blossfeldiana_9814.JPG"
+ },
+ "Amaryllis": {
+  "f": "amaryllis.jpg",
+  "by": "Daniel Macher",
+  "lic": "CC BY-SA 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Hippeastrum_Gilmar.jpg"
  }
 };

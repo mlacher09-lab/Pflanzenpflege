@@ -742,5 +742,53 @@
   "licUrl": "https://creativecommons.org/licenses/by-sa/3.0",
   "url": "https://commons.wikimedia.org/wiki/File:T%C3%ADas-Yaiza_-_LZ-2-LZ-706_-_Euphorbia_trigona_02_ies.jpg",
   "src": "de:Dreikantige Wolfsmilch"
+ },
+ "Echeverie": {
+  "f": "echeverie.jpg",
+  "by": "Eria Wei",
+  "lic": "CC BY-SA 4.0",
+  "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Echeveria_elegans_-_1.jpg",
+  "src": "en:Echeveria"
+ },
+ "Haworthie": {
+  "f": "haworthie.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Haworthia_attenuata_4.jpg",
+  "src": "de:Haworthia"
+ },
+ "Lebende Steine": {
+  "f": "lebende-steine.jpg",
+  "by": "yellowcloud",
+  "lic": "CC BY 2.0",
+  "licUrl": "https://creativecommons.org/licenses/by/2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Lithops_2.jpg",
+  "src": "en:Lithops"
+ },
+ "Weihnachtskaktus": {
+  "f": "weihnachtskaktus.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:ZygocactusTruncatus.jpg",
+  "src": "de:Schlumbergera"
+ },
+ "Flammendes Käthchen": {
+  "f": "flammendes-kaethchen.jpg",
+  "by": "I.Sáček, senior",
+  "lic": "CC0",
+  "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "url": "https://commons.wikimedia.org/wiki/File:Kalanchoe_blossfeldiana_9814.JPG",
+  "src": "de:Kalanchoe blossfeldiana"
+ },
+ "Amaryllis": {
+  "f": "amaryllis.jpg",
+  "by": "Daniel Macher",
+  "lic": "CC BY-SA 2.0",
+  "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Hippeastrum_Gilmar.jpg",
+  "src": "de:Rittersterne"
  }
 }
