@@ -485,5 +485,77 @@ export const PLANT_IMAGES = {
   "by": "Ahoerstemeier",
   "lic": "CC BY-SA 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:Banyantree.jpg"
+ },
+ "Keulenlilie": {
+  "f": "keulenlilie.jpg",
+  "by": "David Monniaux",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Cordyline_terminalis_dsc03651.jpg"
+ },
+ "Kroton": {
+  "f": "kroton.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Croton_David.Monniaux_2005.jpg"
+ },
+ "Buntnessel": {
+  "f": "buntnessel.jpg",
+  "by": "Bjoertvedt",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Plectranthus_scutellarioides_-_El_Yunque_nat_park_PR_IMG_2120.JPG"
+ },
+ "Zierspargel": {
+  "f": "zierspargel.jpg",
+  "by": "Photo by and (c)2006 Derek Ramsey (Ram-Man). Location credit to the Chanticleer ",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Asparagus_setaceus_Leaves_2760px.jpg"
+ },
+ "Bubikopf": {
+  "f": "bubikopf.jpg",
+  "by": "WayneRay",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Helxine_soleirolii_WPC.jpg"
+ },
+ "Glücksbambus": {
+  "f": "gluecksbambus.jpg",
+  "by": "Dracaenaworldwide",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:TD_311-Dracaena_braunii_@_TK_08-05-2008_2008bg00032-3_Theo_Damen.jpg"
+ },
+ "Zimmertanne": {
+  "f": "zimmertanne.jpg",
+  "by": "John Tann from Sydney, Australia",
+  "lic": "CC BY 2.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Norfolk_Island_pine_(3393883103).jpg"
+ },
+ "Zimmerahorn": {
+  "f": "zimmerahorn.jpg",
+  "by": "Mark Marathon",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Abutilon_fraseri.jpg"
+ },
+ "Palmfarn": {
+  "f": "palmfarn.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Cycas_rumphii_BotGard1105MalePlantWithCone11.JPG"
+ },
+ "Zwergdattelpalme": {
+  "f": "zwergdattelpalme.jpg",
+  "by": "Forest &amp; Kim Starr",
+  "lic": "CC BY 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0139_Phoenix_roebelenii.jpg"
+ },
+ "Fischschwanzpalme": {
+  "f": "fischschwanzpalme.jpg",
+  "by": "Aftabbanoori",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Caryota_Mitis_tree_in_Bagh-e-Jinnah,_Lahore.jpg"
+ },
+ "Dreikantige Wolfsmilch": {
+  "f": "dreikantige-wolfsmilch.jpg",
+  "by": "Frank Vincentz",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:T%C3%ADas-Yaiza_-_LZ-2-LZ-706_-_Euphorbia_trigona_02_ies.jpg"
  }
 };
