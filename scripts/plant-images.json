@@ -638,5 +638,13 @@
   "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
   "url": "https://commons.wikimedia.org/wiki/File:Ficus_pumila_(Leafs).jpg",
   "src": "en:Ficus pumila"
+ },
+ "Ficus Audrey": {
+  "f": "ficus-audrey.jpg",
+  "by": "Ahoerstemeier",
+  "lic": "CC BY-SA 3.0",
+  "licUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+  "url": "https://commons.wikimedia.org/wiki/File:Banyantree.jpg",
+  "src": "de:Banyan-Feige"
  }
 }

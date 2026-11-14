@@ -479,5 +479,11 @@ export const PLANT_IMAGES = {
   "by": "Ixitixel",
   "lic": "CC BY-SA 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:Ficus_pumila_(Leafs).jpg"
+ },
+ "Ficus Audrey": {
+  "f": "ficus-audrey.jpg",
+  "by": "Ahoerstemeier",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Banyantree.jpg"
  }
 };
