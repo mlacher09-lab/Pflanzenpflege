@@ -99,11 +99,15 @@ function confClass(c) { return c >= .75 ? 'high' : c >= .45 ? 'mid' : 'low'; }
 
 async function identify() {
   const out = $('scan-result');
+  const shot = photo;                       // Foto, zu dem diese Erkennung gehört
+  const stale = () => photo !== shot;       // Scan verlassen oder neues Foto → Ergebnis verwerfen
   out.innerHTML = `<div class="spinner-row"><div class="spinner"></div>Pflanze wird erkannt…</div>`;
   if (api.status !== 'ok') await api.health();
+  if (stale()) return;
   if (api.status !== 'ok') { analytics.track('scan', { result: 'no_server', status: api.status }); renderNoServer(); return; }
   try {
-    const res = await api.analyze({ mode: 'identify', image: photo });
+    const res = await api.analyze({ mode: 'identify', image: shot });
+    if (stale()) return;
     lastResult = res;
     const top = res.candidates?.[0];
     analytics.track('scan', top && res.is_plant !== false
@@ -111,6 +115,7 @@ async function identify() {
       : { result: 'no_plant' });
     renderCandidates(res);
   } catch (e) {
+    if (stale()) return;
     analytics.track('scan', { result: 'error', status: e.status || 0 });
     out.innerHTML = `<div class="ai-box error">Erkennung fehlgeschlagen: ${esc(e.message)}</div>${manualBlock()}`;
     bindManual();
