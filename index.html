@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Pflanzenpflege</title>
 <meta name="description" content="Pflanzenbuch mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste – auf allen Geräten.">
 <meta name="theme-color" content="#2D6A4F" media="(prefers-color-scheme: light)">
@@ -31,7 +31,7 @@
     </div>
     <div class="hdr-btns">
       <button class="icon-btn" id="notif-btn" title="Pflegehinweise" aria-label="Pflegehinweise">🔔<span class="badge" id="notif-badge" hidden>0</span></button>
-      <button class="btn-accent" id="add-btn" data-action="add-plant"><span style="font-size:18px;line-height:1">+</span> Pflanze</button>
+      <button class="btn-accent" id="add-btn" data-action="add-plant"><span style="font-size:18px;line-height:1">+</span> <span id="add-btn-label">Pflanze</span></button>
     </div>
   </div>
   <div class="tabs-row" id="plants-tabs">
@@ -56,7 +56,7 @@
     <div class="list-bar" id="list-bar" hidden>
       <div class="search-field">
         <span class="search-icon" aria-hidden="true">🔍</span>
-        <input type="search" id="plant-search" placeholder="Pflanzen suchen" autocomplete="off" enterkeyhint="search" aria-label="Meine Pflanzen durchsuchen">
+        <input type="search" id="plant-search" placeholder="Suchen" autocomplete="off" enterkeyhint="search" aria-label="Meine Pflanzen durchsuchen">
         <button type="button" class="search-clear" id="plant-search-clear" aria-label="Suche leeren" hidden>✕</button>
       </div>
       <label class="sort-wrap"><span aria-hidden="true">⇅</span>
@@ -145,16 +145,16 @@
         <div>
           <label class="form-label" for="fd-care">Pflegeaufwand</label>
           <select id="fd-care" class="input">
-            <option value="3">Egal</option><option value="1">Nur pflegeleicht</option><option value="2">Leicht bis mittel</option>
+            <option value="3">Egal</option><option value="1">Nur pflegeleicht</option><option value="2">Leicht bis mittel</option><option value="hard">Aufwändig (für Erfahrene)</option>
           </select>
         </div>
       </div>
       <div class="row">
-        <label class="row" style="gap:8px"><input type="checkbox" id="fd-pet" style="width:18px;height:18px;accent-color:var(--accent)"> Haustiersicher</label>
-        <label class="row" style="gap:8px"><input type="checkbox" id="fd-flower" style="width:18px;height:18px;accent-color:var(--accent)"> Blühend</label>
-        <label class="row" style="gap:8px"><input type="checkbox" id="fd-air" style="width:18px;height:18px;accent-color:var(--accent)"> Luftreinigend</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-pet" style="width:18px;height:18px;accent-color:var(--accent)"> 🐾 Haustiersicher</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-flower" style="width:18px;height:18px;accent-color:var(--accent)"> 🌸 Blühend</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-air" style="width:18px;height:18px;accent-color:var(--accent)"> 🍃 Luftreinigend</label>
         <label class="row" style="gap:8px"><input type="checkbox" id="fd-trend" style="width:18px;height:18px;accent-color:var(--accent)"> ✨ Nur Trendpflanzen</label>
-        <label class="row" style="gap:8px"><input type="checkbox" id="fd-owned" style="width:18px;height:18px;accent-color:var(--accent)"> Bereits vorhandene ausblenden</label>
+        <label class="row" style="gap:8px"><input type="checkbox" id="fd-owned" style="width:18px;height:18px;accent-color:var(--accent)"> 🪴 Bereits vorhandene ausblenden</label>
       </div>
     </form>
     <div class="section-title" id="finder-count"></div>
@@ -163,10 +163,7 @@
 
   <!-- WUNSCHLISTE -->
   <section id="view-wishlist" class="view" hidden>
-    <div class="row" style="justify-content:space-between;margin-bottom:4px">
-      <h2 class="page-title" style="margin:0">Wunschliste</h2>
-      <button class="btn-primary btn-sm" data-action="add-wish">+ Wunsch</button>
-    </div>
+    <h2 class="page-title">Wunschliste</h2>
     <p class="page-sub">Pflanzen, die du dir anschaffen möchtest – mit Notiz, Priorität und Wunsch-Standort.</p>
     <div class="search-field search-lg">
       <span class="search-icon" aria-hidden="true">🔍</span>
@@ -178,8 +175,8 @@
     <div id="wishlist-empty" class="empty" hidden>
       <div class="empty-icon">💜</div>
       <h2>Noch keine Wünsche</h2>
-      <p>Füge Pflanzen aus dem Standort-Finder, dem Scan oder manuell hinzu.</p>
-      <div class="row"><button class="btn-primary" data-nav="finder">Passende Pflanze finden</button><button class="btn-ghost" data-action="add-wish">Manuell hinzufügen</button></div>
+      <p>Suche oben nach einer Pflanze, nutze den Standort-Finder oder den Scan – oder lege über „+ Wunsch“ einen eigenen Wunsch an.</p>
+      <div class="row"><button class="btn-primary" data-nav="finder">Passende Pflanze finden</button></div>
     </div>
   </section>
 
@@ -190,10 +187,7 @@
 
     <div class="section-title">Daten & Geräte</div>
     <div class="list-card">
-      <button class="list-item" id="export-btn"><span class="li-icon">⬇️</span><span class="li-text">Sicherung exportieren<div class="li-sub">JSON-Datei mit allen Pflanzen, Fotos und Wünschen</div></span></button>
-      <button class="list-item" id="share-btn" hidden><span class="li-icon">📤</span><span class="li-text">Sicherung teilen<div class="li-sub">Direkt an ein anderes Gerät senden (AirDrop, Nearby, Messenger)</div></span></button>
-      <button class="list-item" id="import-btn"><span class="li-icon">⬆️</span><span class="li-text">Sicherung importieren<div class="li-sub">Daten von einem anderen Gerät übernehmen</div></span></button>
-      <input type="file" id="import-file" accept="application/json,.json" hidden>
+      <button class="list-item" id="backup-menu-btn"><span class="li-icon">💾</span><span class="li-text">Sicherung & Gerätewechsel<div class="li-sub">Exportieren, teilen oder importieren</div></span><span class="muted">›</span></button>
     </div>
 
     <div class="section-title">Erinnerungen</div>
@@ -207,10 +201,9 @@
       <button class="list-item" id="api-settings-btn"><span class="li-icon">⚙️</span><span class="li-text">Server-Adresse & Zugangscode<div class="li-sub">Nur nötig, wenn die App getrennt vom Server gehostet wird</div></span></button>
     </div>
 
-    <div class="section-title">Nutzungsstatistik</div>
+    <div class="section-title">Datenschutz</div>
     <div class="list-card">
-      <label class="list-item" style="cursor:pointer"><span class="li-icon">📊</span><span class="li-text">Anonyme Nutzungsstatistik<div class="li-sub">Welche Funktionen und Pflanzenarten genutzt werden – ohne Fotos, Namen, Notizen oder IP-Adresse. Hilft, die App zu verbessern.</div></span><input type="checkbox" id="analytics-toggle" style="width:20px;height:20px;accent-color:var(--accent)"></label>
-      <button class="list-item" id="analytics-reset"><span class="li-icon">🔀</span><span class="li-text">Zufällige Kennung erneuern<div class="li-sub">Trennt künftige Ereignisse von bisherigen</div></span></button>
+      <button class="list-item" id="privacy-menu-btn"><span class="li-icon">📊</span><span class="li-text">Nutzungsstatistik & Cookies<div class="li-sub">Einwilligung ansehen und ändern</div></span><span class="status-pill" id="analytics-pill">Aus</span><span class="muted">›</span></button>
     </div>
 
     <div class="section-title">Darstellung</div>
@@ -353,6 +346,47 @@
     <div class="form-group"><label for="api-token">Zugangscode (optional, falls auf dem Server gesetzt)</label><input id="api-token" type="password" autocomplete="off"></div>
   </div>
   <div class="modal-footer"><button class="btn-ghost" data-close="api-dialog">Abbrechen</button><button class="btn-primary" id="api-save-btn">Speichern & testen</button></div>
+</dialog>
+
+<!-- SICHERUNG (Untermenü) -->
+<dialog id="backup-dialog" aria-labelledby="backup-title">
+  <div class="modal-header"><div><span class="modal-title" id="backup-title">Sicherung & Gerätewechsel</span><div class="muted">Alle Pflanzen, Fotos und Wünsche in einer Datei</div></div><button class="close-btn" data-close="backup-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <div class="list-card sub-menu">
+      <button class="list-item" id="export-btn"><span class="li-icon">⬇️</span><span class="li-text">Sicherung exportieren<div class="li-sub">JSON-Datei auf diesem Gerät speichern</div></span></button>
+      <button class="list-item" id="share-btn" hidden><span class="li-icon">📤</span><span class="li-text">Sicherung teilen<div class="li-sub">Direkt an ein anderes Gerät senden (AirDrop, Nearby, Messenger)</div></span></button>
+      <button class="list-item" id="import-btn"><span class="li-icon">⬆️</span><span class="li-text">Sicherung importieren<div class="li-sub">Daten von einem anderen Gerät übernehmen</div></span></button>
+    </div>
+    <input type="file" id="import-file" accept="application/json,.json" hidden>
+  </div>
+</dialog>
+
+<!-- NUTZUNGSSTATISTIK & COOKIES (Untermenü) -->
+<dialog id="privacy-dialog" aria-labelledby="privacy-title">
+  <div class="modal-header"><span class="modal-title" id="privacy-title">Nutzungsstatistik & Cookies</span><button class="close-btn" data-close="privacy-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <div class="list-card sub-menu">
+      <label class="list-item" style="cursor:pointer"><span class="li-icon">📊</span><span class="li-text">Anonyme Nutzungsstatistik<div class="li-sub">Welche Funktionen und Pflanzenarten genutzt werden – ohne Fotos, Namen, Notizen oder IP-Adresse. Hilft, die App zu verbessern.</div></span><input type="checkbox" id="analytics-toggle" style="width:20px;height:20px;accent-color:var(--accent);flex-shrink:0"></label>
+      <button class="list-item" id="analytics-reset"><span class="li-icon">🔀</span><span class="li-text">Zufällige Kennung erneuern<div class="li-sub">Trennt künftige Ereignisse von bisherigen</div></span></button>
+      <div class="list-item" style="cursor:default"><span class="li-icon">🍪</span><span class="li-text">Cookies<div class="li-sub">Die App setzt keine Cookies. Deine Pflanzen und Einstellungen liegen nur im Speicher dieses Geräts – das ist für die Funktion nötig und braucht keine Einwilligung.</div></span></div>
+      <a class="list-item" href="datenschutz.html"><span class="li-icon">🔒</span><span class="li-text">Datenschutzerklärung</span><span class="muted">›</span></a>
+    </div>
+  </div>
+</dialog>
+
+<!-- EINWILLIGUNG (erster Start) -->
+<dialog id="consent-dialog" aria-labelledby="consent-title">
+  <div class="modal-header"><span class="modal-title" id="consent-title" tabindex="-1" autofocus style="outline:none">Willkommen 🌿</span></div>
+  <div class="modal-body">
+    <p style="margin-bottom:12px">Darf die App eine <strong>anonyme Nutzungsstatistik</strong> senden? Sie zeigt, welche Funktionen und Pflanzenarten genutzt werden, und hilft, die App zu verbessern.</p>
+    <ul class="consent-list">
+      <li>Keine Fotos, Namen, Notizen, Räume oder IP-Adressen</li>
+      <li>Nur eine zufällige Geräte-Kennung, die keiner Person zugeordnet ist</li>
+      <li>🍪 Keine Cookies – deine Pflanzen bleiben auf diesem Gerät</li>
+    </ul>
+    <p class="muted">Du kannst die Entscheidung jederzeit unter „Mehr → Nutzungsstatistik & Cookies“ ändern. Details in der <a href="datenschutz.html">Datenschutzerklärung</a>.</p>
+  </div>
+  <div class="modal-footer consent-footer"><button class="btn-ghost" id="consent-deny">Ablehnen</button><button class="btn-primary" id="consent-allow">Erlauben</button></div>
 </dialog>
 
 <!-- BESTÄTIGUNG -->

@@ -14,11 +14,12 @@
 //   aliases weitere Namen / Gattungen für die Zuordnung von Scan-Ergebnissen
 //   tips    Pflegetipps
 
+// Lichtstufen beschreiben den Platz in der Wohnung (nicht das Wetter): Icon + Beispiel wie bei Luftfeuchte/Temperatur
 export const LIGHT_LEVELS = {
-  sun:     { label: 'Vollsonnig',   icon: '☀️', hint: 'Südfenster, mehrere Stunden direkte Sonne' },
-  bright:  { label: 'Hell',         icon: '🌤', hint: 'Fensternähe ohne pralle Mittagssonne' },
-  partial: { label: 'Halbschattig', icon: '⛅', hint: '1–3 m vom Fenster, Ost-/Westseite' },
-  shade:   { label: 'Schattig',     icon: '🌥', hint: 'Raummitte, Nordfenster, Flur' },
+  sun:     { label: 'Vollsonnig',   icon: '🔆', example: 'Südfenster',        hint: 'Direkt am Fenster mit mehreren Stunden direkter Sonne am Tag' },
+  bright:  { label: 'Hell',         icon: '🪟', example: 'am Fenster',        hint: 'Viel Tageslicht, aber keine pralle Mittagssonne' },
+  partial: { label: 'Halbschattig', icon: '🛋️', example: '1–3 m vom Fenster', hint: 'Etwas Abstand zum Fenster oder Ost-/Westfenster' },
+  shade:   { label: 'Schattig',     icon: '🚪', example: 'Raummitte, Flur',   hint: 'Wenig Tageslicht, z. B. Nordfenster oder Flur' },
 };
 export const HUM_LEVELS = { 1: 'Niedrig', 2: 'Mittel', 3: 'Hoch' };
 export const SIZE_LEVELS = { s: 'Klein (bis 40 cm)', m: 'Mittel (40–120 cm)', l: 'Groß (über 120 cm)' };

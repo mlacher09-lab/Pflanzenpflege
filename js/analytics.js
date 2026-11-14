@@ -1,5 +1,6 @@
 // Anonyme Nutzungsstatistik: sammelt Ereignisse, sendet sie gebündelt an /api/event.
-// Keine Fotos, keine Namen, keine Notizen – nur Ereignistyp und wenige Eigenschaften. Abschaltbar unter „Mehr“.
+// Keine Fotos, keine Namen, keine Notizen – nur Ereignistyp und wenige Eigenschaften.
+// Nur mit Einwilligung (Abfrage beim ersten Start); änderbar unter „Mehr → Nutzungsstatistik & Cookies“.
 import { store } from './store.js';
 import { api } from './api.js';
 
@@ -17,7 +18,9 @@ function loadQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) |
 function saveQueue(q) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-MAX_QUEUE))); } catch { /* egal */ } }
 
 export const analytics = {
-  enabled: true,
+  enabled: false,
+  needsConsent: false,  // true, solange beim ersten Start noch keine Entscheidung getroffen wurde
+  pending: [],          // Ereignisse vor der Entscheidung – nur im Arbeitsspeicher, nie gesendet ohne Einwilligung
   clientId: null,
   version: '',
   queue: [],
@@ -26,26 +29,46 @@ export const analytics = {
 
   async init(version) {
     this.version = version;
-    this.enabled = (await store.getSetting('analytics', true)) !== false;
-    this.clientId = await store.getSetting('clientId');
-    if (!this.clientId) { this.clientId = crypto.randomUUID().replace(/-/g, '').slice(0, 24); await store.setSetting('clientId', this.clientId); }
-    this.queue = loadQueue();
+    let consent = await store.getSetting('analyticsConsent');
+    if (consent == null && (await store.getSetting('analytics')) === false) { consent = 'denied'; await store.setSetting('analyticsConsent', consent); } // früher abgeschaltet
+    this.needsConsent = consent == null;
+    this.enabled = consent === 'granted';
+    if (this.enabled) await this.ensureId();
+    this.queue = this.enabled ? loadQueue() : [];
+    if (!this.enabled) saveQueue([]);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flush(true); });
     window.addEventListener('pagehide', () => this.flush(true));
     setInterval(() => this.flush(), 30000);
     if (this.queue.length) setTimeout(() => this.flush(), 1500);
   },
-  async setEnabled(on) {
+  async ensureId() {
+    this.clientId = await store.getSetting('clientId');
+    if (!this.clientId) { this.clientId = crypto.randomUUID().replace(/-/g, '').slice(0, 24); await store.setSetting('clientId', this.clientId); }
+  },
+  /** Einwilligung erteilen oder widerrufen. */
+  async setConsent(on) {
     this.enabled = !!on;
+    this.needsConsent = false;
+    await store.setSetting('analyticsConsent', on ? 'granted' : 'denied');
     await store.setSetting('analytics', this.enabled);
-    if (!on) { this.queue = []; saveQueue([]); }
+    if (on) {
+      await this.ensureId();
+      this.queue.push(...this.pending); saveQueue(this.queue);
+      if (this.queue.length) setTimeout(() => this.flush(), 1500);
+    } else {
+      this.queue = []; saveQueue([]);
+      this.clientId = null; await store.setSetting('clientId', null);   // Kennung bei Widerruf verwerfen
+    }
+    this.pending = [];
   },
   async resetId() {
+    if (!this.enabled) return;
     this.clientId = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
     await store.setSetting('clientId', this.clientId);
   },
 
   track(type, props = {}) {
+    if (this.needsConsent) { if (this.pending.length < 20) this.pending.push({ t: type, ts: Date.now(), p: props }); return; }
     if (!this.enabled || this.serverOk === false) return;
     this.queue.push({ t: type, ts: Date.now(), p: props });
     if (this.queue.length > MAX_QUEUE) this.queue = this.queue.slice(-MAX_QUEUE);

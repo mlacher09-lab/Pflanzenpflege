@@ -3,9 +3,9 @@
 export const PLANT_IMAGES = {
  "Aloe Vera": {
   "f": "aloe-vera.jpg",
-  "by": "Wouter Hagens",
-  "lic": "Public domain",
-  "url": "https://commons.wikimedia.org/wiki/File:Aloe_vera_A.jpg"
+  "by": "Slyronit",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Aloe_Vera_in_a_metal_Pot.jpg"
  },
  "Anthurie": {
   "f": "anthurie.jpg",
