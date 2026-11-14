@@ -2,13 +2,13 @@
 import { PLANT_DB, PLANT_NAMES, ROOMS, LIGHT_LEVELS, LEGACY_LIGHT, PET_LEVELS, resolvePlantName, searchPlants, seasonalTips, season, SEASON_NAME, SEASON_ICON } from './plants-db.js';
 import { store, uid } from './store.js';
 import { api } from './api.js';
-import { esc, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, compressImage, toast, miniMarkdown, confirmDialog } from './util.js';
+import { esc, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
 import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist } from './wishlist.js';
 import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.2.0';
+export const APP_VERSION = '2.3.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ export function lightLabel(l) { return LIGHT_LEVELS[l]?.label || l || ''; }
 function plantCard(p) {
   const db = PLANT_DB[p.type] || {};
   const w = waterStatus(p), f = fertStatus(p), urg = urgencyClass(p);
-  const photo = p.photo ? `<img src="${p.photo}" alt="" loading="lazy">` : `<span>${db.e || '🪴'}</span>`;
+  const photo = p.photo || plantImg(p.type) ? `<img src="${p.photo || plantImg(p.type)}" alt="" loading="lazy">` : `<span>${db.e || '🪴'}</span>`;
   return `<article class="plant-card" data-open="${p.id}" tabindex="0" role="button" aria-label="${esc(p.nickname || p.type)}">
     <div class="card-urgency-bar ${urg}"></div>
     <div class="card-body"><div class="card-photo">${photo}</div>
@@ -239,7 +239,8 @@ export function openDetail(id) {
   const db = PLANT_DB[p.type] || {};
   const w = waterStatus(p), f = fertStatus(p);
   const hero = $('detail-hero');
-  hero.innerHTML = p.photo ? `<img src="${p.photo}" alt="">` : `<span>${db.e || '🪴'}</span>`;
+  const cr = !p.photo && plantImgCredit(p.type);
+  hero.innerHTML = p.photo || plantImg(p.type) ? `<img src="${p.photo || plantImg(p.type)}" alt="">${cr ? `<span class="img-credit">Bild: ${esc(cr.by)}, ${esc(cr.lic)}</span>` : ''}` : `<span>${db.e || '🪴'}</span>`;
   $('d-name').textContent = p.nickname || p.type;
   $('d-sci').textContent = p.nickname ? `${p.type} · ${db.sci || ''}` : (db.sci || '');
   const dots = [1, 2, 3].map(i => `<span class="diff-dot ${i <= (db.d || 1) ? 'on' : ''}"></span>`).join('');

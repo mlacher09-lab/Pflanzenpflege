@@ -1,5 +1,10 @@
 // Kleine Helfer: Datum, Status, Bilder, Toasts, HTML-Escaping
 import { PLANT_DB } from './plants-db.js';
+import { PLANT_IMAGES } from './plant-images.js';
+
+/** Pfad zum Datenbank-Bild einer Pflanzenart (Wikimedia Commons, lokal gespeichert) oder null. */
+export function plantImg(type) { const i = PLANT_IMAGES[type]; return i ? `img/plants/${i.f}` : null; }
+export function plantImgCredit(type) { return PLANT_IMAGES[type] || null; }
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

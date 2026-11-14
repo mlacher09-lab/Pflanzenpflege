@@ -1,8 +1,8 @@
 // Service Worker: App-Shell offline verfügbar machen, API-Aufrufe immer ans Netz.
-const VERSION = 'pfl-v2.2.0';
+const VERSION = 'pfl-v2.3.0';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css', './css/fonts.css', './impressum.html', './datenschutz.html',
-  './js/app.js', './js/api.js', './js/analytics.js', './js/plants-db.js', './js/plants-more.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js',
+  './js/app.js', './js/api.js', './js/analytics.js', './js/plant-images.js', './js/plants-db.js', './js/plants-more.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js',
   './fonts/dmsans-400-latin.woff2', './fonts/dmsans-500-latin.woff2', './fonts/dmsans-600-latin.woff2', './fonts/playfairdisplay-400-latin.woff2', './fonts/playfairdisplay-600-latin.woff2',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
 ];
@@ -25,6 +25,11 @@ self.addEventListener('fetch', e => {
       if (res.ok) caches.open(VERSION).then(c => c.put(req, res.clone()));
       return res;
     }).catch(() => hit)));
+    return;
+  }
+  // Pflanzenbilder: Cache zuerst, sie ändern sich nicht
+  if (url.pathname.includes('/img/plants/')) {
+    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => { if (res.ok) caches.open(VERSION).then(c => c.put(req, res.clone())); return res; })));
     return;
   }
   // Eigene Dateien: Netz zuerst (damit Updates ankommen), sonst Cache; Navigation fällt auf index.html zurück

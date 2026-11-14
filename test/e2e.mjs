@@ -66,6 +66,7 @@ await page.click('.nav-btn[data-nav="finder"]');
 await page.waitForSelector('.result');
 const n0 = await page.locator('.result').count();
 check(n0 > 10, `Ergebnisse vorhanden (${n0})`);
+check((await page.locator('.result .emoji img').count()) > 0, 'Pflanzenbilder im Finder');
 await page.selectOption('#fd-room', 'Bad');
 await page.waitForTimeout(100);
 check((await page.isChecked('input[name="fd-hum"][value="3"]')), 'Raum-Vorgabe setzt feuchte Luft');

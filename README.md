@@ -10,6 +10,7 @@ als installierbare Web-App (PWA) für Handy, Tablet und Desktop. Ohne Build-Schr
 | **Finder** | Licht, Luftfeuchte, Temperatur, Größe, Pflegeaufwand, haustiersicher, blühend, luftreinigend → bewertete Trefferliste (0–100 Punkte) mit Begründung |
 | **Wünsche** | Priorität, Wunsch-Standort, Notiz, Foto; „Gekauft“ überführt den Wunsch ins Pflanzenbuch |
 | **Mehr** | Sicherung exportieren/teilen/importieren (Gerätewechsel), Erinnerungen, KI-Server-Einstellungen, Nutzungsstatistik an/aus, Design |
+| **Bilder** | 1 Foto pro Pflanzenart aus Wikimedia Commons (frei lizenziert, lokal gespeichert) in Finder, Wunschliste, Scan und Pflanzenbuch; eigene Fotos haben Vorrang; Bildnachweise unter `bildnachweise.html` |
 | **Statistik** | Anonyme Ereignisse (welche Funktionen, welche Pflanzen) in Postgres; Auswertung unter `stats.html` mit Admin-Code |
 
 Datenbank: 120 Pflanzen (gängige Zimmerpflanzen, aktuelle Trendpflanzen, beliebte Balkonpflanzen) mit strukturierten Werten (Lichtstufen, Luftfeuchte, Temperaturbereich, Giftigkeit für Haustiere, Größe, Kategorie für Saisontipps, Aliase für die Scan-Zuordnung, Trend- und Balkon-Kennzeichen) in `js/plants-db.js` und `js/plants-more.js`.
@@ -59,6 +60,8 @@ stats.html              Auswertungsseite (Admin)
 sw.js, manifest.webmanifest, icons/   PWA
 dev-server.js           lokaler Server inkl. /api
 scripts/make-icons.mjs  PNG-Icons aus SVG erzeugen
+scripts/fetch-images.mjs  Pflanzenfotos von Wikipedia/Commons laden (einmalig, mit Lizenzprüfung) → img/plants/, js/plant-images.js
+scripts/make-credits.mjs  bildnachweise.html aus scripts/plant-images.json erzeugen
 test/e2e.mjs            End-to-End-Test
 ```
 
@@ -110,4 +113,5 @@ Schritt-für-Schritt-Anleitung bis zur Veröffentlichung (Hosting, Domain, Insta
 
 - **Kein automatischer Abgleich zwischen Geräten.** Dafür wäre ein Konto-Backend nötig (z. B. Supabase); Export/Import deckt den Gerätewechsel ab.
 - **Erinnerungen** erscheinen beim Öffnen der App (und als App-Badge). Echte Push-Benachrichtigungen im Hintergrund brauchen einen Push-Server.
+- Neue Pflanze mit Bild: Eintrag in `js/plants-more.js`, dann `node scripts/fetch-images.mjs "Name"` und `node scripts/make-credits.mjs`.
 - Die Pflanzendatenbank lässt sich in `js/plants-more.js` erweitern; neue Einträge sind sofort in Finder, Scan-Zuordnung und Autocomplete verfügbar.

@@ -1,7 +1,7 @@
 // Scan-Modus: Kamera-Vorschau, Foto aufnehmen, Pflanze erkennen, Gesundheitscheck, Übernahme ins Pflanzenbuch
 import { PLANT_DB, resolvePlantName } from './plants-db.js';
 import { api } from './api.js';
-import { esc, compressImage, toast, miniMarkdown } from './util.js';
+import { esc, compressImage, toast, miniMarkdown, plantImg } from './util.js';
 import { openAddModal, navigate, getPlants, attachAutocomplete } from './app.js';
 import { addWish } from './wishlist.js';
 import { analytics } from './analytics.js';
@@ -131,7 +131,8 @@ function renderCandidates(res) {
     html += `<div class="section-title" style="margin-top:4px">Erkannt</div>`;
     html += cands.map((c, i) => {
       const db = c.key ? PLANT_DB[c.key] : null;
-      return `<div class="candidate"><div class="emoji">${db?.e || '🌱'}</div>
+      const img = c.key ? plantImg(c.key) : null;
+      return `<div class="candidate"><div class="emoji">${img ? `<img src="${img}" alt="" loading="lazy">` : (db?.e || '🌱')}</div>
         <div class="grow"><div class="name">${esc(c.key || c.name_de || c.sci)}${owned.has(c.key) ? ' <span class="chip good">bereits im Pflanzenbuch</span>' : ''}${wish.has(c.key) ? ' <span class="chip wish">auf der Wunschliste</span>' : ''}</div>
         <div class="sci">${esc(c.sci || '')}${c.key && c.name_de && c.name_de !== c.key ? ` · ${esc(c.name_de)}` : ''}</div>
         ${!db ? '<div class="hint">Nicht in der Pflegedatenbank – Pflegedaten müssen manuell gesetzt werden.</div>' : `<div class="hint">💧 alle ${db.w} Tage · ${db.lt}</div>`}</div>

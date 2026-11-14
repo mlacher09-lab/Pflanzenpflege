@@ -1,7 +1,7 @@
 // Wunschliste: Pflanzen, die angeschafft werden sollen – mit Notiz, Priorität, Standort und Übernahme ins Pflanzenbuch
 import { PLANT_DB, resolvePlantName } from './plants-db.js';
 import { store, uid } from './store.js';
-import { esc, today, toast, confirmDialog } from './util.js';
+import { esc, today, toast, confirmDialog, plantImg } from './util.js';
 import { openAddModal, attachAutocomplete } from './app.js';
 import { setWishRef } from './scan.js';
 import { analytics } from './analytics.js';
@@ -73,7 +73,7 @@ export function renderWishlist() {
   list.innerHTML = [...wishlist].sort((a, b) => b.priority - a.priority || a.addedAt.localeCompare(b.addedAt)).map(w => {
     const db = w.type ? PLANT_DB[w.type] : null;
     return `<div class="wish-item">
-      <div class="emoji">${w.photo ? `<img src="${w.photo}" alt="">` : (db?.e || '🌱')}</div>
+      <div class="emoji">${w.photo || (w.type && plantImg(w.type)) ? `<img src="${w.photo || plantImg(w.type)}" alt="" loading="lazy">` : (db?.e || '🌱')}</div>
       <div class="grow">
         <div class="row" style="gap:8px"><span class="name">${esc(w.name)}</span><span class="prio prio-${w.priority}">${PRIO[w.priority] || 'Bald'}</span></div>
         <div class="muted" style="font-style:italic">${esc(db?.sci || '')}</div>
