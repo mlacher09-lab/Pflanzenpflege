@@ -41,12 +41,6 @@
       <button class="tab" data-tab="fert">🌱 Düngen</button>
       <button class="tab" data-tab="rooms">📍 Nach Raum</button>
     </div>
-    <select id="sort-select" class="select-sm" aria-label="Sortierung">
-      <option value="urgency">Dringlichkeit</option>
-      <option value="water">💧 Gießfälligkeit</option>
-      <option value="fert">🌱 Düngfälligkeit</option>
-      <option value="name">A–Z</option>
-    </select>
   </div>
 </header>
 
@@ -59,6 +53,17 @@
       <button class="close-btn" id="install-dismiss" aria-label="Ausblenden">✕</button>
     </div>
     <div id="summary" hidden></div>
+    <div class="list-bar" id="list-bar" hidden>
+      <span class="list-count" id="list-count"></span>
+      <label class="sort-wrap"><span aria-hidden="true">⇅</span>
+        <select id="sort-select" class="select-sm" aria-label="Sortierung">
+          <option value="urgency">Dringlichkeit</option>
+          <option value="water">💧 Gießfälligkeit</option>
+          <option value="fert">🌱 Düngfälligkeit</option>
+          <option value="name">A–Z</option>
+        </select>
+      </label>
+    </div>
     <div id="plant-grid"></div>
     <div id="empty" class="empty" hidden>
       <div class="empty-icon">🌿</div>
@@ -282,6 +287,19 @@
     <button class="close-btn" data-close="detail-dialog" aria-label="Schließen">✕</button>
   </div>
   <div class="modal-body" id="detail-body"></div>
+</dialog>
+
+<!-- PFLEGE-ÜBERSICHT (Gießen / Düngen) -->
+<dialog id="care-dialog" aria-labelledby="care-title">
+  <div class="modal-header">
+    <div><span class="modal-title" id="care-title"></span><div class="muted" id="care-sub"></div></div>
+    <button class="close-btn" data-close="care-dialog" aria-label="Schließen">✕</button>
+  </div>
+  <div class="modal-body" id="care-body"></div>
+  <div class="modal-footer" id="care-footer" hidden>
+    <button class="btn-ghost" data-close="care-dialog">Schließen</button>
+    <button class="btn-primary" id="care-all-btn"></button>
+  </div>
 </dialog>
 
 <!-- WUNSCH -->

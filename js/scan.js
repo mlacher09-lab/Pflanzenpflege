@@ -1,7 +1,7 @@
 // Scan-Modus: Kamera-Vorschau, Foto aufnehmen, Pflanze erkennen, Gesundheitscheck, Übernahme ins Pflanzenbuch
 import { PLANT_DB, resolvePlantName } from './plants-db.js';
 import { api } from './api.js';
-import { esc, compressImage, toast, miniMarkdown, plantImg } from './util.js';
+import { esc, compressImage, toast, miniMarkdown, plantImg, seasonalWater } from './util.js';
 import { openAddModal, navigate, getPlants, attachAutocomplete } from './app.js';
 import { addWish } from './wishlist.js';
 import { analytics } from './analytics.js';
@@ -12,6 +12,7 @@ let facing = 'environment';
 let photo = null;        // Data-URL des aktuellen Fotos
 let lastResult = null;
 let visible = false;
+let camGen = 0;          // erhöht sich bei jedem Stopp – verwirft verspätet gestartete Kameras
 
 export function initScan() {
   $('scan-shutter').onclick = capture;
@@ -24,8 +25,22 @@ export function initScan() {
     showPhoto(); identify();
   };
 }
-export function onScanShow() { visible = true; if (!photo) startCamera(); }
-export function onScanHide() { visible = false; stopCamera(); }
+export function onScanShow() { visible = true; startCamera(); }
+export function onScanHide() { visible = false; stopCamera(); resetScan(); }
+
+/** Verwirft Foto und Ergebnis, damit beim nächsten Öffnen wieder die Live-Kamera erscheint. */
+function resetScan() {
+  photo = null; lastResult = null;
+  const img = $('scan-photo'); img.hidden = true; img.removeAttribute('src');
+  $('scan-result').innerHTML = '';
+}
+
+// App im Hintergrund: Kamera freigeben; beim Zurückkehren ohne aufgenommenes Foto neu starten.
+document.addEventListener('visibilitychange', () => {
+  if (!visible) return;
+  if (document.hidden) stopCamera();
+  else if (!photo && !stream) startCamera();
+});
 
 function setPlaceholder(text, show = true) {
   $('scan-placeholder').hidden = !show;
@@ -40,9 +55,11 @@ async function startCamera() {
     $('scan-shutter').disabled = true; $('scan-flip').hidden = true; return;
   }
   setPlaceholder('Kamera wird gestartet…');
+  const gen = camGen;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
-    if (!visible) { stopCamera(); return; }
+    const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+    if (!visible || gen !== camGen || photo) { s.getTracks().forEach(t => t.stop()); return; }
+    stream = s;
     const v = $('scan-video'); v.srcObject = stream; v.hidden = false;
     await v.play().catch(() => {});
     $('scan-overlay').hidden = false; setPlaceholder('', false);
@@ -50,12 +67,14 @@ async function startCamera() {
     const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
     $('scan-flip').hidden = devices.filter(d => d.kind === 'videoinput').length < 2;
   } catch (e) {
+    if (!visible || gen !== camGen || photo) return;
     const denied = e.name === 'NotAllowedError' || e.name === 'SecurityError';
     setPlaceholder(denied ? 'Kamerazugriff abgelehnt.<br>Erlaube die Kamera in den Browser-Einstellungen oder wähle ein Foto aus der Galerie.' : 'Keine Kamera gefunden.<br>Wähle ein Foto aus der Galerie.');
     $('scan-shutter').disabled = true;
   }
 }
 function stopCamera() {
+  camGen++;
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   const v = $('scan-video'); v.srcObject = null; v.hidden = true; $('scan-overlay').hidden = true;
 }
@@ -80,11 +99,15 @@ function confClass(c) { return c >= .75 ? 'high' : c >= .45 ? 'mid' : 'low'; }
 
 async function identify() {
   const out = $('scan-result');
+  const shot = photo;                       // Foto, zu dem diese Erkennung gehört
+  const stale = () => photo !== shot;       // Scan verlassen oder neues Foto → Ergebnis verwerfen
   out.innerHTML = `<div class="spinner-row"><div class="spinner"></div>Pflanze wird erkannt…</div>`;
   if (api.status !== 'ok') await api.health();
+  if (stale()) return;
   if (api.status !== 'ok') { analytics.track('scan', { result: 'no_server', status: api.status }); renderNoServer(); return; }
   try {
-    const res = await api.analyze({ mode: 'identify', image: photo });
+    const res = await api.analyze({ mode: 'identify', image: shot });
+    if (stale()) return;
     lastResult = res;
     const top = res.candidates?.[0];
     analytics.track('scan', top && res.is_plant !== false
@@ -92,6 +115,7 @@ async function identify() {
       : { result: 'no_plant' });
     renderCandidates(res);
   } catch (e) {
+    if (stale()) return;
     analytics.track('scan', { result: 'error', status: e.status || 0 });
     out.innerHTML = `<div class="ai-box error">Erkennung fehlgeschlagen: ${esc(e.message)}</div>${manualBlock()}`;
     bindManual();
@@ -135,7 +159,7 @@ function renderCandidates(res) {
       return `<div class="candidate"><div class="emoji">${img ? `<img src="${img}" alt="" loading="lazy">` : (db?.e || '🌱')}</div>
         <div class="grow"><div class="name">${esc(c.key || c.name_de || c.sci)}${owned.has(c.key) ? ' <span class="chip good">bereits im Pflanzenbuch</span>' : ''}${wish.has(c.key) ? ' <span class="chip wish">auf der Wunschliste</span>' : ''}</div>
         <div class="sci">${esc(c.sci || '')}${c.key && c.name_de && c.name_de !== c.key ? ` · ${esc(c.name_de)}` : ''}</div>
-        ${!db ? '<div class="hint">Nicht in der Pflegedatenbank – Pflegedaten müssen manuell gesetzt werden.</div>' : `<div class="hint">💧 alle ${db.w} Tage · ${db.lt}</div>`}</div>
+        ${!db ? '<div class="hint">Nicht in der Pflegedatenbank – Pflegedaten müssen manuell gesetzt werden.</div>' : `<div class="hint">💧 alle ${seasonalWater(c.key)} Tage · ${db.lt}</div>`}</div>
         <span class="conf ${confClass(c.confidence)}">${Math.round((c.confidence || 0) * 100)} %</span></div>
         ${i === 0 ? `<div class="candidate-actions">
           <button class="btn-primary" data-scan-add="${esc(c.key || '')}">🪴 Ins Pflanzenbuch</button>

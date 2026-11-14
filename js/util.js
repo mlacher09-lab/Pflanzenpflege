@@ -1,5 +1,5 @@
 // Kleine Helfer: Datum, Status, Bilder, Toasts, HTML-Escaping
-import { PLANT_DB } from './plants-db.js';
+import { PLANT_DB, season, SEASON_NAME } from './plants-db.js';
 import { PLANT_IMAGES } from './plant-images.js';
 
 /** Pfad zum Datenbank-Bild einer Pflanzenart (Wikimedia Commons, lokal gespeichert) oder null. */
@@ -33,8 +33,41 @@ export function fmtDate(s) {
   return new Date(y, m - 1, d).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
 }
 
-export function waterInterval(p) { return p.waterInterval || PLANT_DB[p.type]?.w || 7; }
-export function fertInterval(p)  { if (p.fertInterval) return p.fertInterval; const f = PLANT_DB[p.type]?.f; return f == null ? 14 : f; }
+// Saisonale Anpassung der Standard-Intervalle (Faktor auf die Tage; 0 = Pause).
+// Abgestimmt auf die Saisontipps in plants-db.js: im Sommer öfter, im Herbst/Winter seltener gießen,
+// im Winter nicht düngen. Eigene Intervalle (p.waterInterval / p.fertInterval) bleiben unverändert.
+const WATER_FACTOR = {
+  drought:   { spring: 1, summer: 0.85, autumn: 1.3,  winter: 2 },
+  moisture:  { spring: 1, summer: 0.8,  autumn: 1.2,  winter: 1.4 },
+  flowering: { spring: 1, summer: 0.8,  autumn: 1.25, winter: 1.5 },
+  foliage:   { spring: 1, summer: 0.85, autumn: 1.25, winter: 1.5 },
+};
+const FERT_FACTOR = { spring: 1, summer: 1, autumn: 2, winter: 0 };
+const scale = (days, factor) => Math.max(1, Math.round(days * factor));
+
+/** Standard-Gießintervall einer Art in der aktuellen (oder angegebenen) Jahreszeit. */
+export function seasonalWater(type, s = season()) {
+  const db = PLANT_DB[type];
+  const base = db?.w || 7;
+  return scale(base, WATER_FACTOR[db?.cat || 'foliage']?.[s] ?? 1);
+}
+/** Standard-Düngeintervall einer Art in der aktuellen Jahreszeit; 0 = nicht düngen. */
+export function seasonalFert(type, s = season()) {
+  const f = PLANT_DB[type]?.f;
+  const base = f == null ? 14 : f;
+  if (base === 0 || FERT_FACTOR[s] === 0) return 0;
+  return scale(base, FERT_FACTOR[s]);
+}
+/** true, wenn die Düngung nur wegen der Jahreszeit pausiert (nicht grundsätzlich unnötig). */
+export function fertSeasonPaused(p) {
+  if (p.fertInterval) return false;
+  const f = PLANT_DB[p.type]?.f;
+  return (f == null || f > 0) && seasonalFert(p.type) === 0;
+}
+export const currentSeasonName = () => SEASON_NAME[season()];
+
+export function waterInterval(p) { return p.waterInterval || seasonalWater(p.type); }
+export function fertInterval(p)  { return p.fertInterval || seasonalFert(p.type); }
 
 function status(last, interval, verb) {
   if (!last) return { cls: 'soon', text: `Noch nie ${verb}`, days: -999 };
@@ -46,7 +79,7 @@ function status(last, interval, verb) {
   return { cls: 'ok', text: `In ${diff} Tagen ${verb === 'gegossen' ? 'gießen' : 'düngen'}`, days: diff, next };
 }
 export const waterStatus = p => status(p.lastWatered, waterInterval(p), 'gegossen');
-export const fertStatus  = p => fertInterval(p) === 0 ? { cls: 'ok', text: 'Kein Dünger nötig', days: 9999 } : status(p.lastFertilized, fertInterval(p), 'gedüngt');
+export const fertStatus  = p => fertInterval(p) === 0 ? { cls: 'ok', text: fertSeasonPaused(p) ? `${currentSeasonName()}pause – nicht düngen` : 'Kein Dünger nötig', days: 9999 } : status(p.lastFertilized, fertInterval(p), 'gedüngt');
 export function urgencyClass(p) {
   const w = waterStatus(p), f = fertStatus(p);
   if (w.cls === 'overdue' || f.cls === 'overdue') return 'overdue';

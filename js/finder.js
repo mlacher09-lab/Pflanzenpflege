@@ -1,6 +1,6 @@
 // Standort-Finder: bewertet alle Pflanzen der Datenbank gegen die Bedingungen eines Platzes
 import { PLANT_DB, PLANT_NAMES, ROOMS, ROOM_PRESETS, LIGHT_LEVELS, HUM_LEVELS, SIZE_LEVELS, PET_LEVELS } from './plants-db.js';
-import { esc, toast, plantImg, plantImgCredit } from './util.js';
+import { esc, toast, plantImg, plantImgCredit, seasonalWater, seasonalFert, currentSeasonName } from './util.js';
 import { openAddModal, getPlants } from './app.js';
 import { addWish, getWishlist } from './wishlist.js';
 import { analytics } from './analytics.js';
@@ -124,6 +124,6 @@ export function renderFinder() {
     const p = PLANT_DB[b.dataset.finfo]; const box = $(`finfo-${b.dataset.finfo.replace(/\W/g, '_')}`);
     box.hidden = !box.hidden;
     const cr = plantImgCredit(b.dataset.finfo);
-    box.innerHTML = `${plantImg(b.dataset.finfo) ? `<img src="${plantImg(b.dataset.finfo)}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:8px">` : ''}<strong>💧 Gießen</strong> alle ${p.w} Tage · <strong>🌱 Düngen</strong> ${p.f === 0 ? 'nicht nötig' : `alle ${p.f} Tage`} · <strong>☀️</strong> ${esc(p.lt)} · <strong>💦</strong> ${esc(HUM_LEVELS[p.hum])} · <strong>🌡️</strong> ${esc(p.tmp)}<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>${cr ? `<div class="muted" style="font-size:11px;margin-top:6px">Bild: ${esc(cr.by)}, ${esc(cr.lic)} · <a href="${esc(cr.url)}" target="_blank" rel="noopener">Wikimedia Commons</a></div>` : ''}`;
+    box.innerHTML = `${plantImg(b.dataset.finfo) ? `<img src="${plantImg(b.dataset.finfo)}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:8px">` : ''}<strong>💧 Gießen</strong> alle ${seasonalWater(b.dataset.finfo)} Tage · <strong>🌱 Düngen</strong> ${p.f === 0 ? 'nicht nötig' : seasonalFert(b.dataset.finfo) === 0 ? `${currentSeasonName()}pause` : `alle ${seasonalFert(b.dataset.finfo)} Tage`} <span class="muted">(${currentSeasonName()})</span> · <strong>☀️</strong> ${esc(p.lt)} · <strong>💦</strong> ${esc(HUM_LEVELS[p.hum])} · <strong>🌡️</strong> ${esc(p.tmp)}<ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>${cr ? `<div class="muted" style="font-size:11px;margin-top:6px">Bild: ${esc(cr.by)}, ${esc(cr.lic)} · <a href="${esc(cr.url)}" target="_blank" rel="noopener">Wikimedia Commons</a></div>` : ''}`;
   });
 }

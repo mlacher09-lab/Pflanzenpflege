@@ -114,6 +114,21 @@ await page.click('#scan-shutter');
 await page.waitForSelector('#scan-manual');
 check(await page.locator('#scan-photo').isVisible(), 'Foto wurde aufgenommen');
 check((await page.textContent('#scan-result')).includes('ANTHROPIC_API_KEY'), 'Hinweis auf fehlenden Schlüssel');
+
+console.log('8b. Kamera wird beim Verlassen/Zurückkehren zurückgesetzt');
+await page.click('.nav-btn[data-nav="plants"]');
+await page.waitForTimeout(300);
+await page.click('.nav-btn[data-nav="scan"]');
+await page.waitForTimeout(300);
+check(await page.locator('#scan-photo').isHidden(), 'Scan-Foto nach Tabwechsel ausgeblendet');
+check(((await page.innerHTML('#scan-result')).trim()) === '', 'Scan-Ergebnis nach Tabwechsel leer');
+await page.waitForFunction(() => { const v = document.getElementById('scan-video'); return v && !v.hidden && v.offsetParent !== null; }, null, { timeout: 5000 }).catch(() => {});
+check(await page.locator('#scan-video').isVisible(), 'Live-Kamera nach Tabwechsel wieder sichtbar');
+await page.screenshot({ path: path.join(shots, '06b-scan-zurueckgesetzt.png') });
+// Weiter im bisherigen Ablauf: erneut Foto aufnehmen
+await page.click('#scan-shutter');
+await page.waitForSelector('#scan-manual');
+check(await page.locator('#scan-photo').isVisible(), 'Erneutes Foto nach Reset aufgenommen');
 await page.fill('#scan-manual', 'Aloe');
 await page.click('#scan-manual-ac .ac-item');
 await page.click('#scan-manual-add');
@@ -143,6 +158,113 @@ const sw = await page.evaluate(async () => !!(await navigator.serviceWorker.getR
 check(sw, 'Service Worker registriert');
 const manifest = await page.evaluate(async () => (await fetch('manifest.webmanifest')).ok);
 check(manifest, 'Manifest erreichbar');
+
+console.log('12. Tabs/Sortierung ohne Überlappung (Mobil)');
+await page.click('.nav-btn[data-nav="plants"]');
+await page.waitForSelector('.plant-card');
+await page.waitForTimeout(300);
+const tb = await page.evaluate(() => {
+  const t = document.querySelector('#plants-tabs .tabs'), s = document.getElementById('sort-select');
+  const a = t.getBoundingClientRect(), b = s.getBoundingClientRect(), h = document.getElementById('hdr').getBoundingClientRect();
+  const lastTab = [...t.querySelectorAll('.tab')].pop().getBoundingClientRect();
+  return { hb: h.bottom, st: b.top, sv: b.width > 0, sw: t.scrollWidth, cw: t.clientWidth, fade: t.classList.contains('fade-r'), tabsRight: a.right, vw: innerWidth, lastRight: lastTab.right };
+});
+check(tb.sv && tb.st >= tb.hb, `Sortierung liegt unterhalb der Kopfzeile (Kopf unten ${tb.hb.toFixed(1)}, Sortierung oben ${tb.st.toFixed(1)}) – keine Überlappung mit den Tabs`);
+check(tb.tabsRight <= tb.vw, `Tab-Leiste passt in die Breite (${tb.tabsRight.toFixed(1)} ≤ ${tb.vw})`);
+check(tb.sw > tb.cw ? tb.fade : true, `Tabs: fade-r ${tb.sw > tb.cw ? 'gesetzt, da scrollbar' : 'nicht nötig'} (scrollWidth ${tb.sw}, clientWidth ${tb.cw}, fade-r=${tb.fade})`);
+await page.screenshot({ path: path.join(shots, '10-tabs-ringe.png') });
+
+console.log('13. Saisonale Intervalle');
+const season = await page.evaluate(async () => {
+  const { PLANT_DB } = await import('/js/plants-db.js');
+  const m = await import('/js/util.js');
+  return { w: PLANT_DB['Monstera'].w, cat: PLANT_DB['Monstera'].cat, season: (await import('/js/plants-db.js')).season(), sw: m.seasonalWater('Monstera') };
+});
+const FACTOR = { drought: 1.3, moisture: 1.2, flowering: 1.25, foliage: 1.25 }; // Herbst
+const expW = Math.max(1, Math.round(season.w * FACTOR[season.cat || 'foliage']));
+check(season.season === 'autumn', `Jahreszeit im Test: ${season.season} (erwartet autumn)`);
+check(season.sw === expW, `seasonalWater(Monstera) = ${season.sw} (erwartet round(${season.w}*${FACTOR[season.cat]}) = ${expW}, cat ${season.cat})`);
+await page.click('.plant-card:has-text("Monika")');
+await page.waitForSelector('#detail-dialog[open]');
+const care = (await page.locator('#detail-dialog .care-card:has-text("Gießrhythmus") .care-card-val').first().textContent()).replace(/\s+/g, ' ').trim();
+check(care.includes(`Alle ${expW} Tage`) && care.includes('(Herbst)'), `Detail zeigt Gießrhythmus: „${care}“`);
+await page.screenshot({ path: path.join(shots, '11-detail-saison.png') });
+await page.click('#detail-dialog [data-close]');
+const u = await page.evaluate(async () => {
+  const m = await import('/js/util.js');
+  return {
+    aloeW: m.seasonalWater('Aloe Vera', 'winter'), aloeS: m.seasonalWater('Aloe Vera', 'summer'),
+    aloeF: m.seasonalFert('Aloe Vera', 'winter'),
+    venus: ['spring', 'summer', 'autumn', 'winter'].map(s => m.seasonalFert('Venusfliegenfalle', s)),
+    custom: m.waterInterval({ type: 'Aloe Vera', waterInterval: 5 }),
+    customF: m.fertInterval({ type: 'Aloe Vera', fertInterval: 9 }),
+  };
+});
+check(u.aloeW === 28, `Aloe Vera Winter gießen = ${u.aloeW} (erwartet 28)`);
+check(u.aloeS === 12, `Aloe Vera Sommer gießen = ${u.aloeS} (erwartet 12)`);
+check(u.aloeF === 0, `Aloe Vera Winter düngen = ${u.aloeF} (erwartet 0)`);
+check(u.venus.every(x => x === 0), `Venusfliegenfalle düngen in allen Jahreszeiten 0 (${u.venus.join(',')})`);
+check(u.custom === 5 && u.customF === 9, `Eigene Intervalle bleiben unverändert (${u.custom}/${u.customF})`);
+
+console.log('14. Statuskreise öffnen Pflege-Übersicht');
+for (const [type, room] of [['Aloe Vera', 'Flur'], ['Bogenhanf', 'Flur'], ['Efeutute', 'Flur']]) {
+  await page.click('#add-btn'); await page.fill('#f-type', type); await page.fill('#f-room', room);
+  await page.fill('#f-watered', '2026-09-01'); await page.fill('#f-fertilized', '2026-09-01');
+  await page.click('#save-btn');
+  await page.waitForFunction(() => !document.getElementById('form-dialog').open);
+}
+await page.waitForTimeout(200);
+const ringTag = await page.evaluate(() => document.querySelector('#summary .ring-card[data-care="water"]')?.tagName);
+check(ringTag === 'BUTTON', `Gießen-Kreis ist ein <button> (${ringTag})`);
+const ringOk = async kind => Number((await page.locator(`#summary .ring-card[data-care="${kind}"] .ring-label`).first().evaluate(e => e.firstChild.textContent)).trim());
+const wOk0 = await ringOk('water');
+await page.click('#summary .ring-card[data-care="water"]');
+await page.waitForTimeout(200);
+check(await page.evaluate(() => document.getElementById('care-dialog').open), 'Pflege-Dialog (Gießen) geöffnet');
+check((await page.textContent('#care-title')).includes('Gießen'), `Dialogtitel: ${await page.textContent('#care-title')}`);
+const items0 = await page.locator('#care-dialog .care-item').count();
+check(items0 >= 3, `Überfällige Pflanzen gelistet (${items0})`);
+check((await page.locator('#care-dialog .care-item-btn[data-water]').count()) === items0, 'Jede Zeile hat Gießen-Button (data-water)');
+check((await page.textContent('#care-body')).includes('Aloe Vera'), 'Aloe Vera in der Fällig-Liste');
+await page.screenshot({ path: path.join(shots, '12-care-dialog.png') });
+const firstName = (await page.locator('#care-dialog .care-item .care-item-name').first().textContent()).trim();
+await page.locator('#care-dialog .care-item-btn').first().click();
+await page.waitForFunction(n => document.querySelectorAll('#care-dialog .care-item').length === n, items0 - 1, { timeout: 3000 }).catch(() => {});
+check((await page.locator('#care-dialog .care-item').count()) === items0 - 1, `Gegossene Pflanze „${firstName}“ verschwindet aus der Liste`);
+check(!(await page.locator('#care-dialog .care-item .care-item-name').allTextContents()).some(t => t.trim() === firstName), 'Name nicht mehr in der Liste');
+check((await ringOk('water')) === wOk0 + 1, `Gießen-Kreis aktualisiert (${wOk0} → ${await ringOk('water')})`);
+check(await page.locator('#care-footer').isVisible(), '#care-footer sichtbar bei ≥2 fälligen');
+await page.click('#care-all-btn');
+await page.waitForSelector('#confirm-dialog[open]');
+await page.screenshot({ path: path.join(shots, '13-care-alle-bestaetigen.png') });
+await page.click('#confirm-dialog .confirm-ok');
+await page.waitForSelector('#care-dialog .care-empty', { timeout: 3000 }).catch(() => {});
+check(await page.locator('#care-dialog .care-empty').isVisible(), 'Nach „Alle gegossen“ erscheint Leer-Zustand');
+check(await page.locator('#care-footer').isHidden(), '#care-footer wieder versteckt');
+const wTot = await page.locator('#summary .ring-card[data-care="water"] .ring-label span').first().textContent();
+check((await ringOk('water')) === Number(wTot.replace('/', '')), `Gießen-Kreis voll (${await ringOk('water')}${wTot})`);
+await page.click('#care-dialog .modal-footer [data-close], #care-dialog .close-btn').catch(() => {});
+await page.evaluate(() => document.getElementById('care-dialog').open && document.getElementById('care-dialog').close());
+check(await page.evaluate(() => !document.getElementById('care-dialog').open), 'Pflege-Dialog geschlossen');
+
+await page.click('#summary .ring-card[data-care="fert"]');
+await page.waitForTimeout(200);
+check(await page.evaluate(() => document.getElementById('care-dialog').open), 'Pflege-Dialog (Düngen) geöffnet');
+check((await page.textContent('#care-title')).includes('Düngen'), `Dialogtitel: ${await page.textContent('#care-title')}`);
+const fItems = await page.locator('#care-dialog .care-item').count();
+check(fItems >= 3 && (await page.locator('#care-dialog .care-item-btn[data-fert]').count()) === fItems, `Düngen-Liste mit data-fert-Buttons (${fItems})`);
+await page.screenshot({ path: path.join(shots, '14-care-duengen.png') });
+await page.locator('#care-dialog .care-item-btn').first().click();
+await page.waitForFunction(n => document.querySelectorAll('#care-dialog .care-item').length === n, fItems - 1, { timeout: 3000 }).catch(() => {});
+check((await page.locator('#care-dialog .care-item').count()) === fItems - 1, 'Düngen: Eintrag verschwindet nach Klick');
+await page.click('#care-all-btn');
+await page.waitForSelector('#confirm-dialog[open]');
+await page.click('#confirm-dialog .confirm-ok');
+await page.waitForSelector('#care-dialog .care-empty', { timeout: 3000 }).catch(() => {});
+check(await page.locator('#care-dialog .care-empty').isVisible(), 'Düngen: „Alle gedüngt“ → Leer-Zustand');
+await page.evaluate(() => document.getElementById('care-dialog').close());
+await page.waitForTimeout(200);
+await page.screenshot({ path: path.join(shots, '15-tabs-ringe-nachher.png') });
 
 console.log('11. Desktop-Layout');
 await page.setViewportSize({ width: 1280, height: 800 });

@@ -1,7 +1,7 @@
 // Wunschliste: Pflanzen, die angeschafft werden sollen – mit Notiz, Priorität, Standort und Übernahme ins Pflanzenbuch
 import { PLANT_DB, resolvePlantName } from './plants-db.js';
 import { store, uid } from './store.js';
-import { esc, today, toast, confirmDialog, plantImg } from './util.js';
+import { esc, today, toast, confirmDialog, plantImg, seasonalWater } from './util.js';
 import { openAddModal, attachAutocomplete } from './app.js';
 import { setWishRef } from './scan.js';
 import { analytics } from './analytics.js';
@@ -77,7 +77,7 @@ export function renderWishlist() {
       <div class="grow">
         <div class="row" style="gap:8px"><span class="name">${esc(w.name)}</span><span class="prio prio-${w.priority}">${PRIO[w.priority] || 'Bald'}</span></div>
         <div class="muted" style="font-style:italic">${esc(db?.sci || '')}</div>
-        <div class="chips" style="margin-top:6px">${w.room ? `<span class="chip">📍 ${esc(w.room)}</span>` : ''}${db ? `<span class="chip">💧 alle ${db.w} Tage</span><span class="chip ${db.pet === 'safe' ? 'good' : db.pet === 'toxic' ? 'bad' : 'warn'}">🐾 ${db.pet === 'safe' ? 'haustiersicher' : db.pet === 'toxic' ? 'giftig' : 'je nach Art'}</span>` : '<span class="chip warn">nicht in der Datenbank</span>'}${SRC[w.source] ? `<span class="chip">${SRC[w.source]}</span>` : ''}</div>
+        <div class="chips" style="margin-top:6px">${w.room ? `<span class="chip">📍 ${esc(w.room)}</span>` : ''}${db ? `<span class="chip">💧 alle ${seasonalWater(w.type)} Tage</span><span class="chip ${db.pet === 'safe' ? 'good' : db.pet === 'toxic' ? 'bad' : 'warn'}">🐾 ${db.pet === 'safe' ? 'haustiersicher' : db.pet === 'toxic' ? 'giftig' : 'je nach Art'}</span>` : '<span class="chip warn">nicht in der Datenbank</span>'}${SRC[w.source] ? `<span class="chip">${SRC[w.source]}</span>` : ''}</div>
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ''}
         <div class="result-actions">
           <button class="btn-primary btn-sm" data-wbuy="${w.id}">🪴 Gekauft – ins Pflanzenbuch</button>
