@@ -89,8 +89,13 @@ export function initFinder() {
   $('finder-form').addEventListener('submit', e => e.preventDefault());
 }
 
+const PAGE = 20;
+let shown = PAGE, lastKey = '';
+
 export function renderFinder() {
   const c = readCriteria();
+  const key = JSON.stringify(c);
+  if (key !== lastKey) { shown = PAGE; lastKey = key; }   // neue Kriterien → wieder bei den besten Treffern beginnen
   $('fd-light-hint').textContent = LIGHT_LEVELS[c.light].hint;
   const owned = new Set(getPlants().map(p => p.type));
   const wished = new Set(getWishlist().map(w => w.type));
@@ -99,7 +104,7 @@ export function renderFinder() {
   clearTimeout(trackTimer);
   trackTimer = setTimeout(() => analytics.track('finder_search', { light: c.light, hum: c.hum, temp: c.temp, room: c.room, size: c.size, care: c.care, pet: c.pet, flower: c.flower, air: c.air, trend: c.trend, results: good.length, top: results[0]?.name || '' }), 2500);
   $('finder-count').textContent = results.length ? `${good.length} gut passende Pflanzen${results.length > good.length ? ` · ${results.length - good.length} mit Einschränkungen` : ''}` : 'Keine Pflanze erfüllt alle Filter – lockere einen Filter.';
-  $('finder-results').innerHTML = results.slice(0, 30).map(r => {
+  $('finder-results').innerHTML = results.slice(0, shown).map(r => {
     const petCls = r.p.pet === 'safe' ? 'good' : r.p.pet === 'toxic' ? 'bad' : 'warn';
     const img = plantImg(r.name);
     return `<div class="result">
@@ -117,7 +122,11 @@ export function renderFinder() {
       </div>
       <div class="score"><div class="num">${r.score}</div><div class="lbl">Punkte</div></div>
     </div>`;
-  }).join('');
+  }).join('') + (results.length > shown
+    ? `<button type="button" class="btn-ghost more-btn" id="finder-more">Mehr anzeigen <span class="muted">· noch ${results.length - shown} Treffer</span></button>`
+    : '');
+  const more = $('finder-more');
+  if (more) more.onclick = () => { shown += PAGE; renderFinder(); };
   $('finder-results').querySelectorAll('[data-fwish]').forEach(b => b.onclick = async () => { await addWish({ type: b.dataset.fwish, name: b.dataset.fwish, room: c.room, source: 'finder' }); toast(`💜 ${b.dataset.fwish} auf die Wunschliste gesetzt`, 'success'); renderFinder(); });
   $('finder-results').querySelectorAll('[data-fadd]').forEach(b => b.onclick = () => openAddModal({ type: b.dataset.fadd, room: c.room, light: c.light, source: 'finder' }));
   $('finder-results').querySelectorAll('[data-finfo]').forEach(b => b.onclick = () => {

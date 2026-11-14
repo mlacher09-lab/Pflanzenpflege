@@ -2,13 +2,13 @@
 import { PLANT_DB, PLANT_NAMES, ROOMS, LIGHT_LEVELS, LEGACY_LIGHT, PET_LEVELS, resolvePlantName, searchPlants, seasonalTips, season, SEASON_NAME, SEASON_ICON } from './plants-db.js';
 import { store, uid } from './store.js';
 import { api } from './api.js';
-import { esc, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
+import { esc, norm, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
 import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
-import { initWishlist, renderWishlist, openWishModal, getWishlist } from './wishlist.js';
+import { initWishlist, renderWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
 import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.4.0';
+export const APP_VERSION = '2.5.1';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -16,6 +16,7 @@ export let plants = [];
 let activeView = 'plants';
 let activeTab = 'all';
 let activeSort = 'urgency';
+let plantQuery = '';
 let pendingPhoto = null;
 let editingId = null;
 let addSource = 'form';
@@ -77,10 +78,18 @@ function sorted(list) {
   const o = { overdue: 0, soon: 1, ok: 2 };
   return c.sort((a, b) => (o[urgencyClass(a)] - o[urgencyClass(b)]) || (waterStatus(a).days - waterStatus(b).days));
 }
+/** Suche im eigenen Pflanzenbuch: Spitzname, Art, wissenschaftlicher Name, Alias, Raum, Notizen. */
+function matchesQuery(p) {
+  if (!plantQuery) return true;
+  const db = PLANT_DB[p.type] || {};
+  const hay = norm([p.nickname, p.type, db.sci, ...(db.aliases || []), p.room, p.notes].filter(Boolean).join(' '));
+  return norm(plantQuery).split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
 function filtered() {
-  if (activeTab === 'water') return sorted(plants.filter(p => ['overdue', 'soon'].includes(waterStatus(p).cls)));
-  if (activeTab === 'fert') return sorted(plants.filter(p => ['overdue', 'soon'].includes(fertStatus(p).cls)));
-  return sorted(plants);
+  const base = plants.filter(matchesQuery);
+  if (activeTab === 'water') return sorted(base.filter(p => ['overdue', 'soon'].includes(waterStatus(p).cls)));
+  if (activeTab === 'fert') return sorted(base.filter(p => ['overdue', 'soon'].includes(fertStatus(p).cls)));
+  return sorted(base);
 }
 export function lightIcon(l) { return LIGHT_LEVELS[l]?.icon || LIGHT_LEVELS[LEGACY_LIGHT[l]]?.icon || ''; }
 export function lightLabel(l) { return LIGHT_LEVELS[l]?.label || l || ''; }
@@ -112,17 +121,19 @@ export function renderPlants() {
   empty.hidden = true;
   if (activeTab === 'rooms') {
     const groups = {};
-    $('list-count').textContent = `${plants.length} ${plants.length === 1 ? 'Pflanze' : 'Pflanzen'}`;
-    sorted(plants).forEach(p => { (groups[p.room || 'Ohne Raum'] ||= []).push(p); });
+    sorted(plants.filter(matchesQuery)).forEach(p => { (groups[p.room || 'Ohne Raum'] ||= []).push(p); });
     grid.innerHTML = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b, 'de')).map(([room, list]) =>
       `<div style="grid-column:1/-1"><div class="section-title" style="margin-top:6px">📍 ${esc(room)} <span class="muted">· ${list.length}</span></div><div id="plant-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(plantCard).join('')}</div></div>`
-    ).join('');
+    ).join('') || noHits();
   } else {
     const list = filtered();
-    $('list-count').textContent = activeTab === 'all' ? `${plants.length} ${plants.length === 1 ? 'Pflanze' : 'Pflanzen'}` : `${list.length} von ${plants.length} fällig`;
-    grid.innerHTML = list.length ? list.map(plantCard).join('') : `<p class="muted" style="grid-column:1/-1;padding:20px 0">Keine Pflanzen in dieser Kategorie – alles versorgt. 🌿</p>`;
+    grid.innerHTML = list.length ? list.map(plantCard).join('') : plantQuery ? noHits() : `<p class="muted" style="grid-column:1/-1;padding:20px 0">Keine Pflanzen in dieser Kategorie – alles versorgt. 🌿</p>`;
   }
   updateBadges();
+}
+
+function noHits() {
+  return `<div class="no-hits" style="grid-column:1/-1"><p>Keine eigene Pflanze passt zu „${esc(plantQuery)}“.</p><button type="button" class="btn-ghost btn-sm" data-nav="wishlist" data-wish-query="${esc(plantQuery)}">In der Pflanzendatenbank suchen</button></div>`;
 }
 
 // ─── PFLEGE-ÜBERSICHT (aus den Statuskreisen) ────────────────────────
@@ -467,7 +478,7 @@ function bindEvents() {
   document.addEventListener('click', async e => {
     const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-edit],[data-dwater],[data-dfert],[data-care],.tab');
     if (!t) return;
-    if (t.dataset.nav) navigate(t.dataset.nav);
+    if (t.dataset.nav) { navigate(t.dataset.nav); if (t.dataset.wishQuery != null) setWishQuery(t.dataset.wishQuery); }
     else if (t.dataset.action === 'add-plant') openAddModal();
     else if (t.dataset.action === 'add-wish') openWishModal();
     else if (t.dataset.close) $(t.dataset.close).close();
@@ -482,6 +493,10 @@ function bindEvents() {
   });
   document.addEventListener('keydown', e => { const c = e.target.closest?.('.plant-card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(c.dataset.open); } });
   $('sort-select').onchange = e => { activeSort = e.target.value; renderPlants(); };
+  const search = $('plant-search');
+  search.addEventListener('input', () => { plantQuery = search.value.trim(); $('plant-search-clear').hidden = !search.value; renderPlants(); });
+  search.addEventListener('keydown', e => { if (e.key === 'Enter') search.blur(); });
+  $('plant-search-clear').onclick = () => { search.value = ''; plantQuery = ''; $('plant-search-clear').hidden = true; renderPlants(); search.focus(); };
   document.querySelector('#plants-tabs .tabs').addEventListener('scroll', updateTabFade, { passive: true });
   window.addEventListener('resize', updateTabFade);
   requestAnimationFrame(updateTabFade);
