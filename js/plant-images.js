@@ -1,4 +1,5 @@
 // Automatisch erzeugt von scripts/fetch-images.mjs – Vorschaubilder aus Wikimedia Commons mit Bildnachweis.
+// f = Datei in img/plants/, by = Urheber, lic = Lizenz, url = Quelle
 export const PLANT_IMAGES = {
  "Aloe Vera": {
   "f": "aloe-vera.jpg",
@@ -98,9 +99,9 @@ export const PLANT_IMAGES = {
  },
  "Kaffeepflanze": {
   "f": "kaffeepflanze.jpg",
-  "by": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen",
-  "lic": "Public domain",
-  "url": "https://commons.wikimedia.org/wiki/File:Koeh-189-cropped.jpg"
+  "by": "Marcelo Corrêa",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Coffee_Flowers.JPG"
  },
  "Kaktus": {
   "f": "kaktus.jpg",
@@ -140,9 +141,9 @@ export const PLANT_IMAGES = {
  },
  "Strahlenaralie": {
   "f": "strahlenaralie.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0287_Schefflera_arboricola.jpg"
+  "by": "JMK",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Schefflera_arboricola,_vrugte,_a,_Pretoria.jpg"
  },
  "Monstera": {
   "f": "monstera.jpg",
@@ -182,9 +183,9 @@ export const PLANT_IMAGES = {
  },
  "Zimmerpalme": {
   "f": "zimmerpalme.jpg",
-  "by": "Tequila 13:54, 24 June 2007 (UTC)",
+  "by": "Bachelot Pierre J-P",
   "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Chamaedorea_elegans.jpg"
+  "url": "https://commons.wikimedia.org/wiki/File:Chamaedorea_elegans_Mart.JPG"
  },
  "Kentia-Palme": {
   "f": "kentia-palme.jpg",
@@ -284,15 +285,9 @@ export const PLANT_IMAGES = {
  },
  "Christusdorn": {
   "f": "christusdorn.jpg",
-  "by": "Curtis",
-  "lic": "Public domain",
-  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_milii_var._milii.jpg"
- },
- "Monstera Variegata": {
-  "f": "monstera-variegata.jpg",
-  "by": "unbekannt",
+  "by": "Ezra Katz",
   "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Monstera_deliciosa2.jpg"
+  "url": "https://commons.wikimedia.org/wiki/File:Euphorbia_Milii_flowers.jpg"
  },
  "Monstera adansonii": {
   "f": "monstera-adansonii.jpg",
@@ -306,36 +301,6 @@ export const PLANT_IMAGES = {
   "lic": "CC BY-SA 4.0",
   "url": "https://commons.wikimedia.org/wiki/File:Rhapidophora_Tetrasperma.jpg"
  },
- "Philodendron Birkin": {
-  "f": "philodendron-birkin.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
- },
- "Philodendron Pink Princess": {
-  "f": "philodendron-pink-princess.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
- },
- "Philodendron Micans": {
-  "f": "philodendron-micans.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
- },
- "Philodendron gloriosum": {
-  "f": "philodendron-gloriosum.jpg",
-  "by": "Forest &amp; Kim Starr",
-  "lic": "CC BY 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Starr_031108-0220_Philodendron_bipinnatifidum.jpg"
- },
- "Anthurium clarinervium": {
-  "f": "anthurium-clarinervium.jpg",
-  "by": "unbekannt",
-  "lic": "CC BY-SA 3.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Anturio1.jpg"
- },
  "Alokasie Black Velvet": {
   "f": "alokasie-black-velvet.jpg",
   "by": "Obsidian Soul",
@@ -344,9 +309,9 @@ export const PLANT_IMAGES = {
  },
  "Alokasie Frydek": {
   "f": "alokasie-frydek.jpg",
-  "by": "basic_sounds [1]",
-  "lic": "CC BY-SA 2.0",
-  "url": "https://commons.wikimedia.org/wiki/File:Cajmere_@_afterhours.jpg"
+  "by": "Dinkum",
+  "lic": "CC0",
+  "url": "https://commons.wikimedia.org/wiki/File:Alocasia_micholitziana.JPG"
  },
  "Gefleckte Efeutute": {
   "f": "gefleckte-efeutute.jpg",
@@ -593,5 +558,131 @@ export const PLANT_IMAGES = {
   "by": "Daniel Macher",
   "lic": "CC BY-SA 2.0",
   "url": "https://commons.wikimedia.org/wiki/File:Hippeastrum_Gilmar.jpg"
+ },
+ "Alpenveilchen": {
+  "f": "alpenveilchen.jpg",
+  "by": "Koppi2",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Alpenveilchen_Messenien.jpg"
+ },
+ "Azalee": {
+  "f": "azalee.jpg",
+  "by": "Kurt Stüber [1]",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Rhododendron_simsii0.jpg"
+ },
+ "Gardenie": {
+  "f": "gardenie.jpg",
+  "by": "Bernard Loison",
+  "lic": "CC BY-SA 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Gardenia_jasminoides1MTFL.jpg"
+ },
+ "Jasmin": {
+  "f": "jasmin.jpg",
+  "by": "Didier Descouens",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:(MHNT)_Jasminum_polyanthum_%E2%80%93_flowers_and_buds.jpg"
+ },
+ "Zitronenbaum": {
+  "f": "zitronenbaum.jpg",
+  "by": "André Karwath aka Aka",
+  "lic": "CC BY-SA 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Lemon.jpg"
+ },
+ "Avocado": {
+  "f": "avocado.jpg",
+  "by": "B.navez",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Persea_americana_fruit_2.JPG"
+ },
+ "Ananas": {
+  "f": "ananas.jpg",
+  "by": "MrToto",
+  "lic": "CC BY-SA 2.0 de",
+  "url": "https://commons.wikimedia.org/wiki/File:Ananaspflanze.jpg"
+ },
+ "Venusfliegenfalle": {
+  "f": "venusfliegenfalle.jpg",
+  "by": "Joe MiGo",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:01_Venusfliegenfalle.jpg"
+ },
+ "Lavendel": {
+  "f": "lavendel.jpg",
+  "by": "User:Fir0002",
+  "lic": "GFDL 1.2",
+  "url": "https://commons.wikimedia.org/wiki/File:Single_lavender_flower02.jpg"
+ },
+ "Oleander": {
+  "f": "oleander.jpg",
+  "by": "Alvesgaspar",
+  "lic": "CC BY 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Nerium_oleander_flowers_leaves.jpg"
+ },
+ "Olivenbaum": {
+  "f": "olivenbaum.jpg",
+  "by": "Abu Shawka",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:Olea_europaea_cuspidata-africana_Cape_Town.JPG"
+ },
+ "Hortensie": {
+  "f": "hortensie.jpg",
+  "by": "Marc Ryckaert (MJJR)",
+  "lic": "CC BY 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Hydrangea_macrophylla_01.jpg"
+ },
+ "Fuchsie": {
+  "f": "fuchsie.jpg",
+  "by": "André Karwath aka Aka",
+  "lic": "CC BY-SA 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Fuchsia_regia_-_blossom_(aka).jpg"
+ },
+ "Dipladenia": {
+  "f": "dipladenia.jpg",
+  "by": "日:Jnn",
+  "lic": "CC BY 2.1 jp",
+  "url": "https://commons.wikimedia.org/wiki/File:Flower-center142058.jpg"
+ },
+ "Fleißiges Lieschen": {
+  "f": "fleissiges-lieschen.jpg",
+  "by": "André Karwath aka Aka",
+  "lic": "CC BY-SA 2.5",
+  "url": "https://commons.wikimedia.org/wiki/File:Impatiens_walleriana_-_blossom_(aka).jpg"
+ },
+ "Petunie": {
+  "f": "petunie.jpg",
+  "by": "unbekannt",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Petunia1.jpg"
+ },
+ "Rosmarin": {
+  "f": "rosmarin.jpg",
+  "by": "Margalob",
+  "lic": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Rosemary_in_bloom.JPG"
+ },
+ "Basilikum": {
+  "f": "basilikum.jpg",
+  "by": "H. Zell",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Ocimum_basilicum_001.JPG"
+ },
+ "Minze": {
+  "f": "minze.jpg",
+  "by": "C T Johansson",
+  "lic": "CC BY-SA 3.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Mentha_spicata-IMG_6186.jpg"
+ },
+ "Kannenpflanze": {
+  "f": "kannenpflanze.jpg",
+  "by": "hirosi SBM",
+  "lic": "Public domain",
+  "url": "https://commons.wikimedia.org/wiki/File:N.macrophylla_x_lowii.jpg"
+ },
+ "Geranie": {
+  "f": "geranie.jpg",
+  "by": "Peter Warren",
+  "lic": "CC0",
+  "url": "https://commons.wikimedia.org/wiki/File:Pelargonium_zonale_in_wild.jpg"
  }
 };

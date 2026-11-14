@@ -55,6 +55,16 @@ export const analytics = {
 
   async flush(useBeacon = false) {
     if (!this.enabled || !this.queue.length || this.serverOk === false) return;
+    if (this.serverOk === null && !useBeacon) {
+      // Erst prüfen, ob der Server eine Statistik-Datenbank hat – vermeidet Fehlermeldungen in der Konsole
+      try {
+        const h = await fetch(api.url('/api/event'), { method: 'GET' });
+        const d = h.ok ? await h.json() : null;
+        if (!d || !d.configured) { this.serverOk = false; this.queue = []; saveQueue([]); return; }
+        this.serverOk = true;
+      } catch { return; }
+    }
+    if (this.serverOk !== true && useBeacon) return;
     const batch = this.queue.slice(0, 50);
     const payload = JSON.stringify({ client: this.clientId, v: this.version, platform: platform(), events: batch });
     const url = api.url('/api/event');

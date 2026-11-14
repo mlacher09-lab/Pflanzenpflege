@@ -1,7 +1,8 @@
 // Lädt einmalig frei lizenzierte Vorschaubilder (Wikipedia/Wikimedia Commons) für alle Pflanzen der Datenbank
 // nach img/plants/ und schreibt js/plant-images.js mit Bildnachweisen. Wiederaufnehmbar; respektiert Pausen.
 //   node scripts/fetch-images.mjs            alle fehlenden Bilder holen
-//   node scripts/fetch-images.mjs Monstera   nur eine Pflanze (neu) holen
+//   node scripts/fetch-images.mjs Monstera   nur eine Pflanze (neu) holen; mehrere mit Komma
+//   WIKIS=en,de node scripts/fetch-images.mjs Lavendel   englische Wikipedia bevorzugen (oft Fotos statt Zeichnungen)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +20,8 @@ const OK_LICENSE = /^(cc0|cc by|cc by-sa|cc-by|public domain|pd|gfdl|no restrict
 
 fs.mkdirSync(outDir, { recursive: true });
 const cache = fs.existsSync(cacheFile) ? JSON.parse(fs.readFileSync(cacheFile, 'utf8')) : {};
-const only = process.argv[2];
+const only = process.argv[2] ? process.argv[2].split(',').map(s => s.trim()) : null; // Name oder Liste; mit WIKIS=en,de Reihenfolge ändern
+const WIKIS = (process.env.WIKIS || 'de,en').split(',');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Abruf über curl, damit der HTTPS-Proxy der Umgebung (HTTPS_PROXY) genutzt wird; Node-fetch ignoriert ihn.
@@ -65,13 +67,13 @@ async function license(file) {
   return { by: strip(m.Artist?.value) || 'unbekannt', lic: strip(m.LicenseShortName?.value) || '', licUrl: m.LicenseUrl?.value || '', url: ii.descriptionurl || `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file)}` };
 }
 
-const names = Object.keys(PLANT_DB).filter(n => !only || n === only);
+const names = Object.keys(PLANT_DB).filter(n => !only || only.includes(n));
 let done = 0, skipped = 0;
 for (const name of names) {
   if (cache[name] && !only && fs.existsSync(path.join(outDir, cache[name].f))) { skipped++; continue; }
   const p = PLANT_DB[name];
   let hit = null, lic = null;
-  outer: for (const wiki of ['de', 'en']) {
+  outer: for (const wiki of WIKIS) {
     for (const title of candidates(name, p)) {
       const img = await pageImage(wiki, title); await sleep(600);
       if (!img) continue;
