@@ -93,7 +93,7 @@ Die Tabelle `events` wird beim ersten Ereignis automatisch angelegt. Gespeichert
 
 Ereignisse: `app_open`, `plant_added`, `plant_deleted`, `care`, `scan`, `diagnose`, `finder_search`, `wish_added`, `wish_bought`, `backup`.
 
-Alte Daten löschen (z. B. monatlich per SQL-Konsole des Anbieters):
+Alte Daten werden automatisch gelöscht: Ein täglicher Vercel-Cron (`vercel.json`) ruft `/api/cleanup` auf und entfernt Ereignisse, die älter als 24 Monate sind. Dafür in Vercel unter *Settings → Environment Variables* die Variable `CRON_SECRET` setzen (beliebiger langer Zufallswert); Vercel sendet sie beim Cron-Aufruf automatisch mit. Ohne `CRON_SECRET` löscht die Funktion nichts. Manuell geht es weiterhin per SQL:
 
 ```sql
 DELETE FROM events WHERE ts < now() - interval '24 months';
