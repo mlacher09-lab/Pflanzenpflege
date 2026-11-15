@@ -1,4 +1,4 @@
-// Scan-Modus: Kamera-Vorschau, Foto aufnehmen, Pflanze erkennen, Gesundheitscheck, Übernahme ins Pflanzenbuch
+// Scan-Modus: Kamera-Vorschau, Foto aufnehmen, Pflanze erkennen, Gesundheitscheck, Übernahme in Mein Garten
 import { PLANT_DB, resolvePlantName } from './plants-db.js';
 import { api } from './api.js';
 import { esc, compressImage, toast, miniMarkdown, plantImg, seasonalWater } from './util.js';
@@ -126,7 +126,7 @@ function manualBlock() {
   return `<div class="card" style="margin-top:12px">
     <div class="form-label">Pflanze manuell zuordnen</div>
     <div class="autocomplete"><input id="scan-manual" class="input" placeholder="Name eingeben, z. B. Monstera" autocomplete="off"><div class="ac-list" id="scan-manual-ac" hidden></div></div>
-    <div class="row" style="margin-top:10px"><button class="btn-primary grow" id="scan-manual-add">Ins Pflanzenbuch</button><button class="btn-ghost" id="scan-retry">📷 Neues Foto</button></div>
+    <div class="row" style="margin-top:10px"><button class="btn-primary grow" id="scan-manual-add">In Mein Garten</button><button class="btn-ghost" id="scan-retry">📷 Neues Foto</button></div>
   </div>`;
 }
 function bindManual() {
@@ -157,12 +157,12 @@ function renderCandidates(res) {
       const db = c.key ? PLANT_DB[c.key] : null;
       const img = c.key ? plantImg(c.key) : null;
       return `<div class="candidate"><div class="emoji">${img ? `<img src="${img}" alt="" loading="lazy">` : (db?.e || '🌱')}</div>
-        <div class="grow"><div class="name">${esc(c.key || c.name_de || c.sci)}${owned.has(c.key) ? ' <span class="chip good">bereits im Pflanzenbuch</span>' : ''}${wish.has(c.key) ? ' <span class="chip wish">auf der Wunschliste</span>' : ''}</div>
+        <div class="grow"><div class="name">${esc(c.key || c.name_de || c.sci)}${owned.has(c.key) ? ' <span class="chip good">bereits in Mein Garten</span>' : ''}${wish.has(c.key) ? ' <span class="chip wish">auf der Wunschliste</span>' : ''}</div>
         <div class="sci">${esc(c.sci || '')}${c.key && c.name_de && c.name_de !== c.key ? ` · ${esc(c.name_de)}` : ''}</div>
         ${!db ? '<div class="hint">Nicht in der Pflegedatenbank – Pflegedaten müssen manuell gesetzt werden.</div>' : `<div class="hint">💧 alle ${seasonalWater(c.key)} Tage · ${db.lt}</div>`}</div>
         <span class="conf ${confClass(c.confidence)}">${Math.round((c.confidence || 0) * 100)} %</span></div>
         ${i === 0 ? `<div class="candidate-actions">
-          <button class="btn-primary" data-scan-add="${esc(c.key || '')}">🪴 Ins Pflanzenbuch</button>
+          <button class="btn-primary" data-scan-add="${esc(c.key || '')}">🪴 In Mein Garten</button>
           <button class="btn-primary btn-wish" data-scan-wish="${esc(c.key || '')}" data-name="${esc(c.name_de || c.sci || '')}">💜 Zur Wunschliste</button>
         </div>` : `<div class="candidate-actions"><button class="btn-ghost btn-sm" data-scan-add="${esc(c.key || '')}">Diese übernehmen</button><button class="btn-ghost btn-sm" data-scan-wish="${esc(c.key || '')}" data-name="${esc(c.name_de || c.sci || '')}">Auf die Wunschliste</button></div>`}`;
     }).join('');

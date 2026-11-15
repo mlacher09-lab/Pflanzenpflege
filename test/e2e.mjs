@@ -321,7 +321,7 @@ await page.waitForTimeout(150);
 const total2 = await parseTotal();
 check((await cnt()) === Math.min(20, total2), `Filterwechsel setzt auf ${Math.min(20, total2)} zurück (${await cnt()})`);
 
-console.log('16. Suche im Pflanzenbuch');
+console.log('16. Suche im Mein Garten');
 await page.click('.nav-btn[data-nav="plants"]');
 await page.waitForSelector('.plant-card');
 await page.waitForTimeout(200);

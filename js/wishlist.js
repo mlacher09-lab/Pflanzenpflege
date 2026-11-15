@@ -1,4 +1,4 @@
-// Wunschliste: Pflanzen, die angeschafft werden sollen – mit Notiz, Priorität, Standort und Übernahme ins Pflanzenbuch
+// Wunschliste: Pflanzen, die angeschafft werden sollen – mit Notiz, Priorität, Standort und Übernahme in Mein Garten
 import { PLANT_DB, resolvePlantName, searchPlants } from './plants-db.js';
 import { store, uid } from './store.js';
 import { esc, norm, today, toast, confirmDialog, plantImg, seasonalWater } from './util.js';
@@ -13,7 +13,7 @@ let query = '', hitLimit = 6;
 export function getWishlist() { return wishlist; }
 
 // ─── SUCHE (Pflanzendatenbank + eigene Wünsche) ──────────────────────
-/** Setzt den Suchbegriff von außen (z. B. aus der Suche im Pflanzenbuch). */
+/** Setzt den Suchbegriff von außen (z. B. aus der Suche in Mein Garten). */
 export function setWishQuery(q) {
   $('wish-search').value = q; query = q.trim(); hitLimit = 6;
   $('wish-search-clear').hidden = !q;
@@ -123,7 +123,7 @@ export function renderWishlist() {
         <div class="chips" style="margin-top:6px">${w.room ? `<span class="chip">📍 ${esc(w.room)}</span>` : ''}${db ? `<span class="chip">💧 alle ${seasonalWater(w.type)} Tage</span><span class="chip ${db.pet === 'safe' ? 'good' : db.pet === 'toxic' ? 'bad' : 'warn'}">🐾 ${db.pet === 'safe' ? 'haustiersicher' : db.pet === 'toxic' ? 'giftig' : 'je nach Art'}</span>` : '<span class="chip warn">nicht in der Datenbank</span>'}${SRC[w.source] ? `<span class="chip">${SRC[w.source]}</span>` : ''}</div>
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ''}
         <div class="result-actions">
-          <button class="btn-primary btn-sm" data-wbuy="${w.id}">🪴 Gekauft – ins Pflanzenbuch</button>
+          <button class="btn-primary btn-sm" data-wbuy="${w.id}">🪴 Gekauft – in Mein Garten</button>
           <button class="btn-ghost btn-sm" data-wedit="${w.id}">✏️</button>
           <button class="btn-ghost btn-sm" data-wdel="${w.id}" aria-label="Entfernen">🗑</button>
         </div>
@@ -134,7 +134,7 @@ export function renderWishlist() {
     const w = wishlist.find(x => x.id === b.dataset.wbuy); if (!w) return;
     openAddModal({ type: w.type || '', room: w.room, photo: w.photo, light: w.type ? PLANT_DB[w.type]?.light?.[0] : undefined, source: 'wishlist' });
     const form = $('form-dialog');
-    const onClose = async () => { form.removeEventListener('close', onClose); const plants = await store.all('plants'); if (w.type && plants.some(p => p.type === w.type && p.addedAt === today())) { analytics.track('wish_bought', { plant: w.type }); await removeWish(w.id); toast(`💜 ${w.name} von der Wunschliste ins Pflanzenbuch übernommen`, 'success'); } };
+    const onClose = async () => { form.removeEventListener('close', onClose); const plants = await store.all('plants'); if (w.type && plants.some(p => p.type === w.type && p.addedAt === today())) { analytics.track('wish_bought', { plant: w.type }); await removeWish(w.id); toast(`💜 ${w.name} von der Wunschliste in Mein Garten übernommen`, 'success'); } };
     form.addEventListener('close', onClose);
   });
   list.querySelectorAll('[data-wedit]').forEach(b => b.onclick = () => { const w = wishlist.find(x => x.id === b.dataset.wedit); if (w) openWishModal(w); });

@@ -1,16 +1,16 @@
 # 🌿 Pflanzenpflege
 
-Pflanzenbuch mit Gieß- und Düngeplan, **Pflanzenscan per Kamera**, **Standort-Finder** und **Wunschliste** –
+Mein Garten mit Gieß- und Düngeplan, **Pflanzenscan per Kamera**, **Standort-Finder** und **Wunschliste** –
 als installierbare Web-App (PWA) für Handy, Tablet und Desktop. Ohne Build-Schritt, ohne Framework.
 
 | Bereich | Was es kann |
 |---|---|
-| **Pflanzen** | Karten mit Fälligkeit für Gießen/Düngen, Statusringe, Sortierung, Gruppierung nach Raum, Detailansicht mit Pflegetipps, Saisontipps, Notizen und eigenen Intervallen |
-| **Scan** | Live-Kamera oder Galerie-Foto → Erkennung der Art (Top-3 mit Wahrscheinlichkeit), Zustand auf dem Foto, Übernahme ins Pflanzenbuch oder auf die Wunschliste; ohne Server: manuelle Zuordnung |
+| **Mein Garten** | Karten mit Fälligkeit für Gießen/Düngen, Statusringe, Sortierung, Gruppierung nach Raum, Detailansicht mit Pflegetipps, Saisontipps, Notizen und eigenen Intervallen |
+| **Scan** | Live-Kamera oder Galerie-Foto → Erkennung der Art (Top-3 mit Wahrscheinlichkeit), Zustand auf dem Foto, Übernahme in Mein Garten oder auf die Wunschliste; ohne Server: manuelle Zuordnung |
 | **Finder** | Licht, Luftfeuchte, Temperatur, Größe, Pflegeaufwand, haustiersicher, blühend, luftreinigend → bewertete Trefferliste (0–100 Punkte) mit Begründung |
-| **Wünsche** | Priorität, Wunsch-Standort, Notiz, Foto; „Gekauft“ überführt den Wunsch ins Pflanzenbuch |
+| **Wünsche** | Priorität, Wunsch-Standort, Notiz, Foto; „Gekauft“ überführt den Wunsch in Mein Garten |
 | **Mehr** | Untermenü „Sicherung & Gerätewechsel“ (exportieren/teilen/importieren), Erinnerungen, KI-Server-Einstellungen, Untermenü „Nutzungsstatistik & Cookies“, Design |
-| **Bilder** | 1 Foto pro Pflanzenart aus Wikimedia Commons (frei lizenziert, lokal gespeichert) in Finder, Wunschliste, Scan und Pflanzenbuch; eigene Fotos haben Vorrang; Bildnachweise unter `bildnachweise.html` |
+| **Bilder** | 1 Foto pro Pflanzenart aus Wikimedia Commons (frei lizenziert, lokal gespeichert) in Finder, Wunschliste, Scan und Mein Garten; eigene Fotos haben Vorrang; Bildnachweise unter `bildnachweise.html` |
 | **Statistik** | Anonyme Ereignisse (welche Funktionen, welche Pflanzen) in Postgres; Auswertung unter `stats.html` mit Admin-Code |
 
 Datenbank: 120 Pflanzen (gängige Zimmerpflanzen, aktuelle Trendpflanzen, beliebte Balkonpflanzen) mit strukturierten Werten (Lichtstufen, Luftfeuchte, Temperaturbereich, Giftigkeit für Haustiere, Größe, Kategorie für Saisontipps, Aliase für die Scan-Zuordnung, Trend- und Balkon-Kennzeichen) in `js/plants-db.js` und `js/plants-more.js`.
@@ -41,7 +41,7 @@ npm test               # Screenshots landen in test/screenshots/
 ```
 index.html              App-Shell (alle Ansichten + Dialoge)
 css/app.css             Design-Tokens (hell/dunkel), Layout, Komponenten
-js/app.js               Navigation, Pflanzenbuch, Formular, Detail, Einstellungen, Service-Worker-Updates
+js/app.js               Navigation, Mein Garten, Formular, Detail, Einstellungen, Service-Worker-Updates
 js/scan.js              Kamera, Fotoaufnahme, Erkennung, manueller Fallback
 js/finder.js            Standort-Finder (Bewertungsfunktion scorePlant)
 js/wishlist.js          Wunschliste

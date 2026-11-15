@@ -1,7 +1,7 @@
 {
   "name": "Pflanzenpflege",
   "short_name": "Pflanzen",
-  "description": "Pflanzenbuch mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste.",
+  "description": "Mein Garten mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

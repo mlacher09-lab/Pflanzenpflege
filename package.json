@@ -2,7 +2,7 @@
   "name": "pflanzenpflege",
   "version": "2.0.0",
   "private": true,
-  "description": "Pflanzenbuch mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste – als installierbare Web-App.",
+  "description": "Mein Garten mit Gieß- und Düngeplan, Pflanzenscan, Standort-Finder und Wunschliste – als installierbare Web-App.",
   "type": "module",
   "scripts": {
     "dev": "node dev-server.js",
