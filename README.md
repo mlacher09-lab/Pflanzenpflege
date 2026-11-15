@@ -9,7 +9,7 @@ als installierbare Web-App (PWA) für Handy, Tablet und Desktop. Ohne Build-Schr
 | **Scan** | Live-Kamera oder Galerie-Foto → Erkennung der Art (Top-3 mit Wahrscheinlichkeit), Zustand auf dem Foto, Übernahme ins Pflanzenbuch oder auf die Wunschliste; ohne Server: manuelle Zuordnung |
 | **Finder** | Licht, Luftfeuchte, Temperatur, Größe, Pflegeaufwand, haustiersicher, blühend, luftreinigend → bewertete Trefferliste (0–100 Punkte) mit Begründung |
 | **Wünsche** | Priorität, Wunsch-Standort, Notiz, Foto; „Gekauft“ überführt den Wunsch ins Pflanzenbuch |
-| **Mehr** | Sicherung exportieren/teilen/importieren (Gerätewechsel), Erinnerungen, KI-Server-Einstellungen, Nutzungsstatistik an/aus, Design |
+| **Mehr** | Untermenü „Sicherung & Gerätewechsel“ (exportieren/teilen/importieren), Erinnerungen, KI-Server-Einstellungen, Untermenü „Nutzungsstatistik & Cookies“, Design |
 | **Bilder** | 1 Foto pro Pflanzenart aus Wikimedia Commons (frei lizenziert, lokal gespeichert) in Finder, Wunschliste, Scan und Pflanzenbuch; eigene Fotos haben Vorrang; Bildnachweise unter `bildnachweise.html` |
 | **Statistik** | Anonyme Ereignisse (welche Funktionen, welche Pflanzen) in Postgres; Auswertung unter `stats.html` mit Admin-Code |
 
@@ -89,7 +89,7 @@ Ohne `DATABASE_URL` sendet die App nichts und die Funktion antwortet mit 503. Mi
 | `DATABASE_URL` | Postgres-Verbindung, z. B. Neon über den Vercel-Marketplace (kostenloser Plan reicht lange) |
 | `ADMIN_TOKEN` | Zugangscode für `stats.html` und `/api/stats` |
 
-Die Tabelle `events` wird beim ersten Ereignis automatisch angelegt. Gespeichert werden Ereignistyp, wenige Eigenschaften (Pflanzenart, Finder-Kriterien, Scan-Ergebnis), eine zufällige Geräte-Kennung, App-Version und Plattform. Keine IP-Adressen, Fotos, Namen oder Notizen. Nutzer können die Statistik unter *Mehr* abschalten und ihre Kennung erneuern.
+Die Tabelle `events` wird beim ersten Ereignis automatisch angelegt. Gespeichert werden Ereignistyp, wenige Eigenschaften (Pflanzenart, Finder-Kriterien, Scan-Ergebnis), eine zufällige Geräte-Kennung, App-Version und Plattform. Keine IP-Adressen, Fotos, Namen oder Notizen. Die Statistik ist standardmäßig aus und wird beim ersten Start per Einwilligungsdialog abgefragt; unter *Mehr → Nutzungsstatistik & Cookies* lässt sie sich widerrufen und die Kennung erneuern. Cookies setzt die App nicht.
 
 Ereignisse: `app_open`, `plant_added`, `plant_deleted`, `care`, `scan`, `diagnose`, `finder_search`, `wish_added`, `wish_bought`, `backup`.
 
@@ -106,7 +106,7 @@ Schritt-für-Schritt-Anleitung bis zur Veröffentlichung (Hosting, Domain, Insta
 ## Daten & Datenschutz
 
 - Alle Daten (Pflanzen, Fotos, Wünsche) liegen in der IndexedDB des Browsers auf dem Gerät.
-- Gerätewechsel: *Mehr → Sicherung exportieren* und auf dem neuen Gerät importieren (oder per Teilen-Funktion direkt senden).
+- Gerätewechsel: *Mehr → Sicherung & Gerätewechsel → Sicherung exportieren* und auf dem neuen Gerät importieren (oder per Teilen-Funktion direkt senden).
 - Nur für Scan und Gesundheitscheck wird ein Foto an deinen Server und von dort an die Claude-API gesendet.
 
 ## Grenzen / mögliche nächste Schritte

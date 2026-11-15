@@ -38,7 +38,7 @@ export function scorePlant(p, c) {
   else if (hi > p.tmin && lo < p.tmax) { score += 10; reasons.push([lo < p.tmin ? 'Im Winter evtl. zu kühl' : 'Evtl. zu warm', 'warn']); }
   else { reasons.push([lo < p.tmin ? 'Zu kühl' : 'Zu warm', 'bad']); }
   // Pflegeaufwand (bis 10)
-  if (p.d <= c.care) { score += 10; if (p.d === 1) reasons.push(['Pflegeleicht', 'good']); }
+  if (p.d <= c.care) { score += 10; if (p.d === 1) reasons.push(['Pflegeleicht', 'good']); else if (c.hard) reasons.push(['Anspruchsvolle Pflege', 'good']); }
   else reasons.push(['Anspruchsvoller als gewünscht', 'warn']);
 
   // Balkon / Terrasse: Freilandeignung
@@ -49,6 +49,7 @@ export function scorePlant(p, c) {
   // Harte Filter
   let excluded = null;
   if (c.trend && !p.trend) excluded = 'keine Trendpflanze';
+  if (c.hard && p.d < 3) excluded = excluded || 'pflegeleichter als gewünscht';
   if (!c.outdoor && p.indoor === false) excluded = 'nur für Balkon und Garten';
   if (c.pet && p.pet !== 'safe') excluded = p.pet === 'toxic' ? 'giftig für Haustiere' : 'Verträglichkeit je nach Art';
   if (c.size && p.size !== c.size) excluded = excluded || `Größe: ${SIZE_LEVELS[p.size]}`;
@@ -68,7 +69,7 @@ function readCriteria() {
     light: document.querySelector('input[name="fd-light"]:checked')?.value || 'bright',
     hum: Number(document.querySelector('input[name="fd-hum"]:checked')?.value || 2),
     temp: document.querySelector('input[name="fd-temp"]:checked')?.value || 'normal',
-    size: $('fd-size').value, care: Number($('fd-care').value || 3),
+    size: $('fd-size').value, care: $('fd-care').value === 'hard' ? 3 : Number($('fd-care').value || 3), hard: $('fd-care').value === 'hard',
     pet: $('fd-pet').checked, flower: $('fd-flower').checked, air: $('fd-air').checked, trend: $('fd-trend').checked,
     hideOwned: $('fd-owned').checked, room: $('fd-room').value, outdoor: !!ROOM_PRESETS[$('fd-room').value]?.outdoor,
   };
@@ -76,7 +77,7 @@ function readCriteria() {
 
 export function initFinder() {
   $('fd-room').innerHTML += ROOMS.map(r => `<option value="${r}">${r}</option>`).join('');
-  $('fd-light').innerHTML = Object.entries(LIGHT_LEVELS).map(([k, v]) => `<label><input type="radio" name="fd-light" value="${k}" ${k === 'bright' ? 'checked' : ''}><span>${v.icon} ${v.label}</span></label>`).join('');
+  $('fd-light').innerHTML = Object.entries(LIGHT_LEVELS).map(([k, v]) => `<label><input type="radio" name="fd-light" value="${k}" ${k === 'bright' ? 'checked' : ''}><span>${v.label} (${v.example})</span></label>`).join('');
   $('fd-room').onchange = e => {
     const pre = ROOM_PRESETS[e.target.value]; if (!pre) return;
     document.querySelectorAll('input[name="fd-hum"]').forEach(r => r.checked = Number(r.value) === pre.hum);
@@ -102,7 +103,7 @@ export function renderFinder() {
   const results = rankPlants(c, owned, c.hideOwned);
   const good = results.filter(r => r.score >= 60);
   clearTimeout(trackTimer);
-  trackTimer = setTimeout(() => analytics.track('finder_search', { light: c.light, hum: c.hum, temp: c.temp, room: c.room, size: c.size, care: c.care, pet: c.pet, flower: c.flower, air: c.air, trend: c.trend, results: good.length, top: results[0]?.name || '' }), 2500);
+  trackTimer = setTimeout(() => analytics.track('finder_search', { light: c.light, hum: c.hum, temp: c.temp, room: c.room, size: c.size, care: c.hard ? 'hard' : c.care, pet: c.pet, flower: c.flower, air: c.air, trend: c.trend, results: good.length, top: results[0]?.name || '' }), 2500);
   $('finder-count').textContent = results.length ? `${good.length} gut passende Pflanzen${results.length > good.length ? ` · ${results.length - good.length} mit Einschränkungen` : ''}` : 'Keine Pflanze erfüllt alle Filter – lockere einen Filter.';
   $('finder-results').innerHTML = results.slice(0, shown).map(r => {
     const img = plantImg(r.name);

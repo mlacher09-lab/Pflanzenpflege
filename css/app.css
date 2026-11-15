@@ -37,7 +37,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; -webkit-text-size-adjust: 100%; }
+html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }  /* manipulation: kein Doppeltipp-Zoom */
 body {
   min-height: 100%; background: var(--bg); color: var(--text);
   font-family: 'DM Sans', system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.55;
@@ -242,7 +242,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); backdrop-filter: blur(2px); }
 .form-group { margin-bottom: 16px; }
 .form-group label, .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-m); margin-bottom: 6px; }
 .form-group input, .form-group select, .form-group textarea, .input {
-  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--rs); background: var(--bg); color: var(--text); font-size: 15px; outline: none; transition: border-color .15s;
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--rs); background: var(--bg); color: var(--text); font-size: 16px; outline: none; transition: border-color .15s;
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .input:focus { border-color: var(--accent); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -422,3 +422,12 @@ a.list-item:hover { background: var(--surface2); }
   #toast-container { left: 92px; }
   #update-bar { left: 104px; bottom: 16px; }
 }
+
+/* ---------- UNTERMENÜS & EINWILLIGUNG ---------- */
+.sub-menu { box-shadow: none; margin-bottom: 0; }
+.sub-menu .list-item:hover { background: var(--surface2); }
+#consent-dialog { max-width: 440px; }
+.consent-list { list-style: none; margin: 0 0 14px; display: grid; gap: 6px; font-size: 14px; }
+.consent-list li { padding-left: 22px; position: relative; }
+.consent-list li::before { content: '✓'; position: absolute; left: 2px; color: var(--ok); font-weight: 700; }
+.consent-footer > button { flex: 1; }

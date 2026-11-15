@@ -8,7 +8,7 @@ import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
 import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.5.1';
+export const APP_VERSION = '2.6.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -36,7 +36,10 @@ export function navigate(view, { push = true } = {}) {
   VIEWS.forEach(v => $(`view-${v}`).hidden = v !== view);
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === view));
   $('plants-tabs').hidden = view !== 'plants';
-  $('add-btn').hidden = view !== 'plants';
+  // Ein einziger Hinzufügen-Button im Kopf – je nach Ansicht für Pflanzen oder Wünsche
+  $('add-btn').hidden = !['plants', 'wishlist'].includes(view);
+  $('add-btn').dataset.action = view === 'wishlist' ? 'add-wish' : 'add-plant';
+  $('add-btn-label').textContent = view === 'wishlist' ? 'Wunsch' : 'Pflanze';
   $('hdr-title').textContent = TITLES[view];
   if (view === 'plants') requestAnimationFrame(updateTabFade);
   if (view === 'scan') onScanShow();
@@ -414,8 +417,8 @@ async function renderMore() {
   else if (Notification.permission === 'granted') { pill.textContent = 'An'; pill.className = 'status-pill ok'; sub.textContent = 'Beim Öffnen der App wirst du an fällige Pflanzen erinnert.'; }
   else if (Notification.permission === 'denied') { pill.textContent = 'Blockiert'; pill.className = 'status-pill warn'; sub.textContent = 'In den Browser-/Systemeinstellungen für diese App erlauben.'; }
   else { pill.textContent = 'Aus'; pill.className = 'status-pill'; sub.textContent = 'Antippen, um Erinnerungen zu erlauben.'; }
-  $('share-btn').hidden = !(navigator.share && navigator.canShare);
   $('analytics-toggle').checked = analytics.enabled;
+  renderAnalyticsPill();
   $('api-pill').textContent = '…'; $('api-sub').textContent = 'Prüfe Verbindung…';
   const h = await api.health();
   const apiPill = $('api-pill');
@@ -423,6 +426,20 @@ async function renderMore() {
   else if (api.status === 'none') { apiPill.textContent = 'Kein Schlüssel'; apiPill.className = 'status-pill warn'; $('api-sub').textContent = 'Server erreichbar, aber ANTHROPIC_API_KEY fehlt (siehe README).'; }
   else if (api.status === 'token') { apiPill.textContent = 'Zugangscode nötig'; apiPill.className = 'status-pill warn'; $('api-sub').textContent = api.token ? 'Der eingetragene Zugangscode ist falsch.' : 'Server bereit – bitte unten den Zugangscode eintragen.'; }
   else { apiPill.textContent = 'Offline'; apiPill.className = 'status-pill warn'; $('api-sub').textContent = `Nicht erreichbar (${h.reason || '–'}). Scan funktioniert dann nur manuell.`; }
+}
+function renderAnalyticsPill() {
+  const pill = $('analytics-pill');
+  pill.textContent = analytics.enabled ? 'An' : 'Aus';
+  pill.className = `status-pill${analytics.enabled ? ' ok' : ''}`;
+}
+/** Einwilligung beim ersten Start: Statistik erst nach ausdrücklichem „Erlauben“. */
+function askConsent() {
+  const dlg = $('consent-dialog');
+  const decide = async allow => { await analytics.setConsent(allow); dlg.close(); renderAnalyticsPill(); };
+  $('consent-allow').onclick = () => decide(true);
+  $('consent-deny').onclick = () => decide(false);
+  dlg.addEventListener('cancel', e => e.preventDefault());   // Esc schließt nicht ohne Entscheidung
+  dlg.showModal();
 }
 async function exportBackup(share = false) {
   const data = await store.exportAll();
@@ -509,9 +526,11 @@ function bindEvents() {
   attachAutocomplete($('f-type'), $('f-type-ac'), typeHint);
   $('notif-btn').onclick = e => { e.stopPropagation(); const p = $('notif-panel'); p.hidden = !p.hidden; if (!p.hidden) renderNotifPanel(); };
   document.addEventListener('click', e => { const p = $('notif-panel'); if (!p.hidden && !p.contains(e.target) && !$('notif-btn').contains(e.target)) p.hidden = true; });
-  $('export-btn').onclick = () => exportBackup(false);
-  $('share-btn').onclick = () => exportBackup(true);
-  $('import-btn').onclick = () => $('import-file').click();
+  $('backup-menu-btn').onclick = () => { $('share-btn').hidden = !(navigator.share && navigator.canShare); $('backup-dialog').showModal(); };
+  $('privacy-menu-btn').onclick = () => { $('analytics-toggle').checked = analytics.enabled; $('privacy-dialog').showModal(); };
+  $('export-btn').onclick = () => { $('backup-dialog').close(); exportBackup(false); };
+  $('share-btn').onclick = () => { $('backup-dialog').close(); exportBackup(true); };
+  $('import-btn').onclick = () => { $('import-file').click(); $('backup-dialog').close(); };
   $('import-file').onchange = e => { const f = e.target.files[0]; if (f) importBackup(f); e.target.value = ''; };
   $('notif-enable-btn').onclick = async () => {
     if (typeof Notification === 'undefined') return;
@@ -521,11 +540,21 @@ function bindEvents() {
   $('api-settings-btn').onclick = () => { $('api-base').value = api.base; $('api-token').value = api.token; $('api-dialog').showModal(); };
   $('api-save-btn').onclick = async () => { await api.save($('api-base').value, $('api-token').value); $('api-dialog').close(); const h = await api.health(); toast(h.ok ? '✔ Erkennungs-Server verbunden' : `Server nicht bereit: ${h.reason || 'nicht erreichbar'}`, h.ok ? 'success' : 'error'); renderMore(); };
   $('theme-select').onchange = e => applyTheme(e.target.value);
-  $('analytics-toggle').onchange = async e => { await analytics.setEnabled(e.target.checked); toast(e.target.checked ? 'Nutzungsstatistik an' : 'Nutzungsstatistik aus – es wird nichts mehr gesendet'); };
+  $('analytics-toggle').onchange = async e => { await analytics.setConsent(e.target.checked); renderAnalyticsPill(); toast(e.target.checked ? 'Nutzungsstatistik an' : 'Nutzungsstatistik aus – es wird nichts mehr gesendet'); };
   $('analytics-reset').onclick = async () => { await analytics.resetId(); toast('Neue zufällige Kennung erzeugt', 'success'); };
   $('install-btn').onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; $('install-banner').hidden = true; };
   $('install-dismiss').onclick = () => { $('install-banner').hidden = true; store.setSetting('installDismissed', true); };
-  document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+  document.querySelectorAll('dialog:not(#consent-dialog)').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+  preventZoom();
+}
+
+// ─── KEIN ZOOM ───────────────────────────────────────────────────────
+// Versehentliches Zoomen (Zwei-Finger-Geste, Doppeltipp, Strg+Mausrad/Trackpad) unterbinden.
+// iOS Safari ignoriert user-scalable=no im Viewport, daher zusätzlich die Gesten-Ereignisse abfangen.
+function preventZoom() {
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
+  document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────
@@ -534,7 +563,7 @@ async function init() {
   if (theme !== 'auto') document.documentElement.dataset.theme = theme;
   $('theme-select').value = theme;
   $('room-list').innerHTML = ROOMS.map(r => `<option value="${r}">`).join('');
-  $('f-light').innerHTML = Object.entries(LIGHT_LEVELS).map(([k, v]) => `<label><input type="radio" name="light" value="${k}"><span>${v.icon} ${v.label}</span></label>`).join('');
+  $('f-light').innerHTML = Object.entries(LIGHT_LEVELS).map(([k, v]) => `<label><input type="radio" name="light" value="${k}"><span>${v.label} (${v.example})</span></label>`).join('');
   const migrated = await store.migrateLegacy();
   if (migrated) toast(`🌿 ${migrated} Pflanzen aus der alten Version übernommen`, 'success');
   await api.load();
@@ -549,6 +578,7 @@ async function init() {
   registerSW();
   api.health().then(() => { /* Status für Scan vorbereiten */ });
   checkAndNotify();
+  if (analytics.needsConsent) askConsent();
   analytics.track('app_open', { plants: plants.length, wishes: getWishlist().length, standalone: matchMedia('(display-mode: standalone)').matches, theme: document.documentElement.dataset.theme || 'auto', view: view || 'plants' });
 }
 init();
