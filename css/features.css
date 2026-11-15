@@ -1,0 +1,31 @@
+/* Zusatzfunktionen: Regen-Hinweise, Urlaubsmodus, Kalender-Export */
+/* Regen-/Frosthinweis (js/weather.js) – nutzt die Farbvariablen der App */
+.weather-banner { display: flex; align-items: center; gap: 12px; background: var(--accent-l); border-radius: var(--r); padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+.weather-banner[hidden] { display: none; }
+.weather-banner .wb-text { flex: 1; min-width: 0; }
+.weather-banner .btn-primary { flex-shrink: 0; }
+.weather-banner.wb-frost { background: var(--overdue-l); }
+@media (max-width: 500px) {
+  .weather-banner { flex-wrap: wrap; }
+  .weather-banner .wb-text { flex-basis: calc(100% - 44px); }
+  .weather-banner .wb-close { order: 2; margin-left: auto; }
+}
+#weather-dialog .wx-row { display: flex; gap: 8px; margin-bottom: 8px; }
+#weather-dialog .wx-row input { flex: 1; min-width: 0; }
+#weather-dialog #wx-results { margin: 8px 0; }
+#weather-dialog #wx-check { width: 100%; margin-top: 12px; }
+#weather-dialog .ai-box { margin-top: 12px; }
+#weather-dialog .modal-body > .muted { margin-bottom: 12px; }
+
+.vacation-dialog .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.vacation-dialog .form-row .form-group { flex: 1 1 140px; min-width: 0; }
+.vacation-dialog .section-title { margin-top: 16px; }
+.vacation-dialog #vac-watered { width: 100%; margin: 10px 0 0; }
+.vacation-dialog .vac-actions { padding: 12px 0 0; flex-wrap: wrap; gap: 8px; }
+.vacation-dialog .li-sub { white-space: normal; }
+#ical-dialog .ics-fieldset { border: 0; padding: 0; margin: 0 0 12px; }
+#ical-dialog .ics-opt { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+#ical-dialog .ics-opt input { width: 20px; height: 20px; accent-color: var(--accent); }
+#ical-dialog .modal-footer { flex-wrap: wrap; gap: 8px; }
+
+.confirm-msg { white-space: pre-line; }

@@ -2,6 +2,7 @@
 // POST { action: 'register'|'login'|'logout'|'delete'|'change_password', ... }   GET → { configured, user }
 import crypto from 'node:crypto';
 import { dbConfigured, getPool, ensureSchema } from '../lib/db.js';
+import { leaveHouseholdTx } from '../lib/space.js';
 import { setCors, send, readBody, normalizeEmail, validEmail, passwordError, hashPassword, verifyPassword, fakeVerify, createSession, authenticate } from '../lib/auth.js';
 
 // Brute-Force-Bremse: feste Verzögerung bei Fehlversuchen + Zähler pro E-Mail/IP (nur pro Instanz im Speicher).
@@ -98,6 +99,11 @@ export default async function handler(req, res) {
 
     if (action === 'logout') {
       await pool.query('DELETE FROM sessions WHERE token_hash = $1', [me.tokenHash]);
+      // Push-Abo dieses Geräts lösen, damit Erinnerungen nicht beim nächsten Nutzer des Geräts landen
+      if (typeof body.endpoint === 'string' && body.endpoint) {
+        try { const { deleteSubscription } = await import('../lib/push.js'); await deleteSubscription(me.id, body.endpoint); }
+        catch (e) { console.error('push logout', e.message); }
+      }
       return send(res, 200, { ok: true });
     }
 
@@ -113,6 +119,7 @@ export default async function handler(req, res) {
         const client = await pool.connect();
         try {
           await client.query('BEGIN');
+          await leaveHouseholdTx(client, me.id);
           await client.query('DELETE FROM items WHERE user_id = $1', [me.id]);
           await client.query('DELETE FROM sessions WHERE user_id = $1', [me.id]);
           await client.query('DELETE FROM users WHERE id = $1', [me.id]);
@@ -123,6 +130,9 @@ export default async function handler(req, res) {
         } finally {
           client.release();
         }
+        // Push-Abos des Nutzers entfernen (eigene Tabelle; Fehler hier dürfen die Löschung nicht scheitern lassen)
+        try { const { deleteSubscriptionsForUser } = await import('../lib/push.js'); await deleteSubscriptionsForUser(me.id); }
+        catch (e) { console.error('push cleanup', e.message); }
         return send(res, 200, { ok: true });
       }
       const pe = passwordError(body.newPassword);

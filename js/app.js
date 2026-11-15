@@ -7,9 +7,14 @@ import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, reloadWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
 import { analytics } from './analytics.js';
-import { account } from './account.js';
+import { account, actorName } from './account.js';
+import { openHousehold } from './household-ui.js';
+import { initWeather, openWeatherSettings, weatherStatusText } from './weather.js';
+import { openVacation } from './vacation.js';
+import { openICalExport } from './ical.js';
+import { initPush, openPushSettings, pushStatusText, setPushContext } from './push.js';
 
-export const APP_VERSION = '2.7.0';
+export const APP_VERSION = '2.8.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -209,7 +214,7 @@ function updateBadges() {
 /** Pflege eintragen: Datum + (im gemeinsamen Garten) wer es war, z. B. lastWatered / lastWateredBy. */
 export function stampCare(p, field, date = today()) {
   p[field] = date;
-  const who = account.user ? account.actorName?.() : null;
+  const who = account.household ? actorName() : null;
   if (who) p[field + 'By'] = who; else delete p[field + 'By'];
 }
 const byWho = (p, field) => account.household && p[field + 'By'] ? ` (${esc(p[field + 'By'])})` : '';
@@ -353,6 +358,7 @@ async function saveForm() {
     waterInterval: Number($('f-wint').value) || null, fertInterval: Number($('f-fint').value) || null,
     notes: $('f-notes').value.trim(),
   };
+  for (const f of ['lastWatered', 'lastFertilized', 'lastRepotted', 'lastMowed']) if (old && data[f] !== old[f]) { if (data[f]) stampCare(data, f, data[f]); else delete data[f + 'By']; }
   if (old) setNewPhoto(data, pendingPhoto || null); else { data.photo = pendingPhoto || null; data.photoDate = data.photo ? today() : null; }
   await store.put('plants', data);
   if (!editingId) analytics.track('plant_added', { plant: type, source: addSource, photo: !!data.photo, room: data.room ? 'ja' : 'nein' });
@@ -536,8 +542,12 @@ async function checkAndNotify() {
 }
 
 // ─── MEHR / EINSTELLUNGEN ────────────────────────────────────────────
+function renderPushPill() { const t = pushStatusText(); $('push-pill').textContent = t; $('push-pill').className = `status-pill${t === 'An' ? ' ok' : ''}`; }
+function renderWeatherPill() { const t = weatherStatusText(); $('weather-pill').textContent = t; $('weather-pill').className = `status-pill${t.startsWith('An') ? ' ok' : ''}`; }
+function renderHouseholdSub() { $('household-sub').textContent = account.household ? `${account.household.name || 'Haushalt'} · ${account.household.members?.length || 1} Mitglied${(account.household.members?.length || 1) === 1 ? '' : 'er'}` : 'Mit Haushalt oder WG zusammen pflegen'; }
 async function renderMore() {
   $('app-version').textContent = `v${APP_VERSION}`;
+  renderWeatherPill(); renderHouseholdSub(); renderPushPill();
   const pill = $('notif-pill'), sub = $('notif-sub');
   if (typeof Notification === 'undefined') { pill.textContent = 'Nicht verfügbar'; sub.textContent = 'Dieser Browser unterstützt keine Benachrichtigungen.'; }
   else if (Notification.permission === 'granted') { pill.textContent = 'An'; pill.className = 'status-pill ok'; sub.textContent = 'Beim Öffnen der App wirst du an fällige Pflanzen erinnert.'; }
@@ -672,12 +682,14 @@ async function reloadAll() {
 }
 async function accountLogout() {
   // Abbrechen/Escape bricht nur ab – das Löschen lokaler Daten ist eine eigene, ausdrückliche Entscheidung.
-  if (!await confirmDialog('Abmelden? Deine Daten bleiben als Gast auf diesem Gerät.', { okText: 'Abmelden' })) return;
+  const shared = !!account.household;
+  if (!await confirmDialog(shared ? `Abmelden? Der gemeinsame Garten „${account.household.name || 'Haushalt'}“ wird von diesem Gerät entfernt – im Haushalt bleibt er erhalten.` : 'Abmelden? Deine Daten bleiben als Gast auf diesem Gerät.', { okText: 'Abmelden' })) return;
   const pending = (await store.pendingChanges()).length;
   if (pending && navigator.onLine) { const r = await account.sync(); if (!r || r.error || r.offline) { if (!await confirmDialog('Es gibt noch nicht abgeglichene Änderungen. Trotzdem abmelden?', { okText: 'Trotzdem abmelden', danger: true })) return; } }
-  await account.logout();
+  // Daten eines gemeinsamen Gartens gehören dem Haushalt – sie dürfen nicht als Gast-Daten in ein anderes Konto wandern
+  await account.logout({ clearLocal: shared });
   await reloadAll(); renderAccount(); toast('Abgemeldet – du nutzt die App jetzt als Gast');
-  if (await confirmDialog('Sollen Pflanzen und Wünsche auch von diesem Gerät gelöscht werden? Auf dem Server bleiben sie erhalten.', { okText: 'Lokal löschen', danger: true })) {
+  if (!shared && await confirmDialog('Sollen Pflanzen und Wünsche auch von diesem Gerät gelöscht werden? Auf dem Server bleiben sie erhalten.', { okText: 'Lokal löschen', danger: true })) {
     await store.wipeLocal(); await reloadAll(); toast('🗑 Lokale Daten gelöscht');
   }
 }
@@ -823,6 +835,13 @@ function bindEvents() {
     else out.innerHTML = `<div class="ai-box error">Server nicht bereit: ${esc(h.reason || 'nicht erreichbar')}</div>`;   // Dialog bleibt offen zum Korrigieren
   };
   $('theme-select').onchange = e => applyTheme(e.target.value);
+  $('household-btn').onclick = () => openHousehold();
+  $('push-btn').onclick = async () => { await initPush({ getPlants: () => plants }).catch(() => {}); setPushContext({ hasLawn: plants.some(hasMow) }); await openPushSettings(); };
+  document.addEventListener('close', e => { if (e.target.id === 'push-dialog') renderPushPill(); }, true);
+  $('weather-btn').onclick = async () => { await openWeatherSettings(); };
+  $('vacation-btn').onclick = () => openVacation({ getPlants: () => plants, markWatered: markWateredMany });
+  $('ical-btn').onclick = () => openICalExport({ getPlants: () => plants });
+  document.addEventListener('close', e => { if (e.target.id === 'weather-dialog') { renderWeatherPill(); initWeather({ getPlants: () => plants, markWatered: markWateredMany }).then(renderWeatherPill); } }, true);
   $('account-btn').onclick = () => { accMsg(''); renderAccountDialog(); $('account-dialog').showModal(); };
   $('acc-tab-login').onclick = () => { accMode = 'login'; accMsg(''); renderAccountDialog(); };
   $('acc-tab-register').onclick = () => { accMode = 'register'; accMsg(''); renderAccountDialog(); };
@@ -831,7 +850,7 @@ function bindEvents() {
   $('acc-logout').onclick = accountLogout;
   $('acc-delete').onclick = accountDelete;
   $('acc-pw-change').onclick = accountChangePw;
-  account.onChange(renderAccount);
+  account.onChange(() => { renderAccount(); if (activeView === 'more') { renderHouseholdSub(); renderPushPill(); } });
   window.addEventListener('store-remote-applied', () => reloadAll());
   $('analytics-toggle').onchange = async e => { await analytics.setConsent(e.target.checked); renderAnalyticsPill(); toast(e.target.checked ? 'Nutzungsstatistik an' : 'Nutzungsstatistik aus – es wird nichts mehr gesendet'); };
   $('analytics-reset').onclick = async () => { await analytics.resetId(); toast('Neue zufällige Kennung erzeugt', 'success'); };
@@ -874,6 +893,8 @@ async function init() {
   if (account.user) account.sync().catch(() => {});
   api.health().then(() => { /* Status für Scan vorbereiten */ });
   checkAndNotify();
+  initWeather({ getPlants: () => plants, markWatered: markWateredMany }).then(renderWeatherPill).catch(() => {});
+  initPush({ getPlants: () => plants }).then(renderPushPill).catch(() => {});
   if (analytics.needsConsent) askConsent();
   analytics.track('app_open', { plants: plants.length, wishes: getWishlist().length, standalone: matchMedia('(display-mode: standalone)').matches, theme: document.documentElement.dataset.theme || 'auto', view: view || 'plants' });
 }

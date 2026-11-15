@@ -21,6 +21,18 @@ async function request(path, { method = 'GET', body, token } = {}) {
   return data || {};
 }
 
+/** Push-Abo dieses Geräts im Browser lösen (beim Abmelden/Löschen); liefert den Endpunkt für den Server. */
+async function dropPushSubscription() {
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    const sub = await reg?.pushManager?.getSubscription();
+    if (!sub) return null;
+    const endpoint = sub.endpoint;
+    await sub.unsubscribe().catch(() => {});
+    return endpoint;
+  } catch { return null; }
+}
+
 export const account = {
   user: null,            // { email } oder null (Gast)
   token: null,
@@ -28,6 +40,7 @@ export const account = {
   status: 'guest',       // guest | syncing | synced | offline | error
   lastSync: 0,
   lastError: '',
+  household: null,       // null | { id, name, inviteCode, members: [{ email, role, me }] }
   get isGuest() { return !this.user; },
 
   onChange(cb) { listeners.add(cb); return () => listeners.delete(cb); },
@@ -48,6 +61,7 @@ export const account = {
       if (e.offline && this.user) this.status = 'offline';
       else if (!e.offline) this.configured = false;
     }
+    if (this.user) await this.loadHousehold().catch(() => {});
     window.addEventListener('store-changed', () => this.schedule());
     window.addEventListener('online', () => this.schedule(500));
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.schedule(500); });
@@ -62,6 +76,7 @@ export const account = {
     this.lastSync = 0; await store.setSetting('local:lastSync', 0);
     await store.queueAll();          // vorhandene Gast-Daten ins Konto übernehmen
     this._emit();
+    await this.loadHousehold().catch(() => {});   // Mitglied eines Haushalts? Dann wird dessen Garten geladen
     await this.sync();
   },
   async register(email, password) { await this._session(await request('/api/auth', { method: 'POST', body: { action: 'register', email, password } })); },
@@ -69,22 +84,78 @@ export const account = {
 
   async _forget() {
     this.token = null; this.user = null; this.lastSync = 0;
-    for (const k of ['local:authToken', 'local:authUser', 'local:syncCursor', 'local:lastSync']) await store.setSetting(k, null);
+    this.household = null;
+    for (const k of ['local:authToken', 'local:authUser', 'local:syncCursor', 'local:lastSync', 'local:householdId']) await store.setSetting(k, null);
     this._set('guest');
   },
   async logout({ clearLocal = false } = {}) {
     if (syncing) await syncing.catch(() => {});
-    if (this.token) await request('/api/auth', { method: 'POST', token: this.token, body: { action: 'logout' } }).catch(() => {});
+    const endpoint = await dropPushSubscription();
+    if (this.token) await request('/api/auth', { method: 'POST', token: this.token, body: { action: 'logout', endpoint } }).catch(() => {});
     await this._forget();
     if (clearLocal) await store.wipeLocal();
   },
   async deleteAccount(password) {
     await request('/api/auth', { method: 'POST', token: this.token, body: { action: 'delete', password } });
+    await dropPushSubscription();
     await this._forget();            // Daten bleiben als Gast auf dem Gerät
   },
   async changePassword(oldPassword, newPassword) {
     await request('/api/auth', { method: 'POST', token: this.token, body: { action: 'change_password', oldPassword, newPassword } });
   },
+
+  // ---- Gemeinsamer Garten (Haushalt) -------------------------------------------------------------
+  async _hh(body) {
+    const r = await request('/api/household', { method: 'POST', token: this.token, body });
+    await this._setHousehold(r.household || null);
+    return this.household;
+  },
+  async _setHousehold(h) {
+    this.household = h;
+    await store.setSetting('local:householdId', h ? h.id : null);
+    this._emit();
+  },
+  /** Datenraum gewechselt: Cursor zurücksetzen, optional lokale Daten in den neuen Raum hochladen, abgleichen. */
+  async _switchSpace({ wipe = false, queue = true } = {}) {
+    if (syncing) await syncing.catch(() => {});
+    if (wipe) await store.wipeLocal();
+    await store.setSetting('local:syncCursor', 0);
+    if (queue) await store.queueAll();
+    const r = await this.sync();
+    window.dispatchEvent(new CustomEvent('store-remote-applied', { detail: { pulled: r?.pulled || 0, switched: true } }));
+  },
+  /** Holt den Haushalt vom Server. Wechselt der Haushalt auf einem anderen Gerät, folgt dieses Gerät (lokale Daten werden mitgenommen). */
+  async loadHousehold() {
+    if (!this.user || !this.token) { this.household = null; this._emit(); return null; }
+    let r;
+    try { r = await request('/api/household', { token: this.token }); }
+    catch (e) { if (e.status === 401 || e.status === 503 || e.offline) return this.household; throw e; }
+    const known = await store.getSetting('local:householdId', null);
+    const h = r.household || null;
+    await this._setHousehold(h);
+    if (known !== undefined && known !== null && (h?.id || null) !== known) await this._switchSpace();   // z. B. entfernt oder auf anderem Gerät beigetreten
+    else if (!known && h) await this._switchSpace();
+    return h;
+  },
+  async createHousehold(name) {
+    await this._hh({ action: 'create', name });
+    await this._switchSpace();       // eigene Daten werden zum gemeinsamen Garten
+    return this.household;
+  },
+  async joinHousehold(code, { bringData = true } = {}) {
+    await this._hh({ action: 'join', code });
+    await this._switchSpace({ wipe: !bringData, queue: bringData });
+    return this.household;
+  },
+  /** keepCopy: lokale Daten bleiben und werden in den persönlichen Garten kopiert (dort evtl. noch vorhandene alte Einträge kommen dazu).
+   *  sonst: lokal leeren und den persönlichen Garten laden. */
+  async leaveHousehold({ keepCopy = true } = {}) {
+    await this._hh({ action: 'leave' });
+    await this._switchSpace({ wipe: !keepCopy, queue: keepCopy });
+  },
+  renameHousehold(name) { return this._hh({ action: 'rename', name }); },
+  regenerateInvite() { return this._hh({ action: 'regenerate_code' }); },
+  removeMember(email) { return this._hh({ action: 'remove_member', email }); },
 
   /** Verzögerter Abgleich nach lokalen Änderungen. */
   schedule(ms = 3000) {
@@ -135,3 +206,9 @@ export const account = {
     return syncing;
   },
 };
+
+/** Kurzer Anzeigename für „wer hat gegossen“: Teil der E-Mail vor dem @ (Gast: null). */
+export function actorName() {
+  const e = account.user?.email;
+  return e ? e.split('@')[0] : null;
+}
