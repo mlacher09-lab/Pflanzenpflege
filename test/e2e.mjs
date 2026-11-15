@@ -419,6 +419,16 @@ console.log('11. Desktop-Layout');
 await page.setViewportSize({ width: 1280, height: 800 });
 await page.waitForTimeout(200);
 await page.screenshot({ path: path.join(shots, '09-desktop.png') });
+{
+  const dctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'de-DE' });
+  const dp = await dctx.newPage();
+  await dp.goto(BASE, { waitUntil: 'networkidle' });
+  await dp.waitForSelector('#consent-dialog[open]');
+  const r = await dp.evaluate(() => { const b = document.getElementById('consent-dialog').getBoundingClientRect(); return { l: b.left, r: innerWidth - b.right, t: b.top, bo: innerHeight - b.bottom, w: b.width }; });
+  check(Math.abs(r.l - r.r) < 2 && Math.abs(r.t - r.bo) < 2 && r.w >= 560, `Desktop: Einwilligung mittig und groß (Breite ${r.w}, Rand l/r ${r.l}/${r.r}, o/u ${r.t}/${r.bo})`);
+  await dp.screenshot({ path: path.join(shots, '10-desktop-einwilligung.png') });
+  await dctx.close();
+}
 
 check(errors.length === 0, errors.length ? `Konsolenfehler: ${errors.join(' | ')}` : 'Keine Konsolen-/Seitenfehler');
 await browser.close();
