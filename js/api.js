@@ -13,8 +13,12 @@ export const api = {
     this.token = (await store.getSetting('appToken', '')) || '';
   },
   async save(base, token) {
-    this.base = (base || '').trim().replace(/\/+$/, '');
-    this.token = (token || '').trim();
+    base = (base || '').trim().replace(/\/+$/, '').replace(/\/api(\/analyze)?$/, '');
+    token = (token || '').trim();
+    // HTTP-Header erlauben nur Latin-1 – sonst scheitert fetch() und es sähe aus wie „nicht erreichbar“.
+    if (/[^\x20-\xFF]/.test(token)) throw new Error('Der Zugangscode enthält Zeichen, die nicht übertragen werden können (z. B. €, Emoji). Bitte den Code auf dem Server ändern.');
+    if (base && !/^https?:\/\//i.test(base)) base = 'https://' + base;
+    this.base = base; this.token = token;
     await store.setSetting('apiBase', this.base);
     await store.setSetting('appToken', this.token);
   },
@@ -32,15 +36,20 @@ export const api = {
       const t = setTimeout(() => ctrl.abort(), 6000);
       const res = await fetch(this.url('/api/analyze'), { method: 'GET', headers: this.headers(), signal: ctrl.signal });
       clearTimeout(t);
-      if (!res.ok) { this.status = 'error'; return { ok: false, reason: `HTTP ${res.status}` }; }
-      const data = await res.json();
+      if (!res.ok) {
+        this.status = 'error';
+        const hint = [404, 405].includes(res.status) ? ' – unter dieser Adresse läuft kein Erkennungs-Server. Bitte die Vercel-Adresse der App als Server-Adresse eintragen.' : '';
+        return { ok: false, reason: `HTTP ${res.status}${hint}` };
+      }
+      let data;
+      try { data = await res.json(); } catch { this.status = 'error'; return { ok: false, reason: 'Antwort ist kein Erkennungs-Server (falsche Server-Adresse?)' }; }
       this.provider = data.provider || null;
       const tokenOk = data.tokenOk !== false;
       this.status = !data.configured ? 'none' : !tokenOk ? 'token' : 'ok';
       return { ...data, ok: !!data.configured && tokenOk, reason: !data.configured ? 'kein Schlüssel' : !tokenOk ? 'Zugangscode fehlt oder ist falsch' : undefined };
     } catch (e) {
       this.status = 'error';
-      return { ok: false, reason: e.name === 'AbortError' ? 'Zeitüberschreitung' : 'Nicht erreichbar' };
+      return { ok: false, reason: e.name === 'AbortError' ? 'Zeitüberschreitung' : this.base ? `${this.base} nicht erreichbar – Adresse prüfen` : 'Nicht erreichbar (offline?)' };
     }
   },
 

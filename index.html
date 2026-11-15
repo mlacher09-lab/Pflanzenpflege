@@ -59,6 +59,7 @@
         <input type="search" id="plant-search" placeholder="Suchen" autocomplete="off" enterkeyhint="search" aria-label="Meine Pflanzen durchsuchen">
         <button type="button" class="search-clear" id="plant-search-clear" aria-label="Suche leeren" hidden>✕</button>
       </div>
+      <button type="button" class="btn-ghost btn-sm select-btn" id="select-btn" aria-pressed="false">☑︎ Auswählen</button>
       <label class="sort-wrap"><span aria-hidden="true">⇅</span>
         <select id="sort-select" class="select-sm" aria-label="Sortierung">
           <option value="urgency">Dringlichkeit</option>
@@ -69,6 +70,14 @@
       </label>
     </div>
     <div id="plant-grid"></div>
+    <div id="select-bar" class="select-bar" hidden role="toolbar" aria-label="Aktionen für ausgewählte Pflanzen">
+      <div class="select-bar-top"><strong id="select-count">Pflanzen antippen</strong><button type="button" class="btn-ghost btn-sm" id="select-all">Alle</button><button type="button" class="close-btn" id="select-cancel" aria-label="Auswahl beenden">✕</button></div>
+      <div class="select-bar-actions">
+        <button type="button" class="btn-primary btn-sm" data-bulk="repot" disabled>🪴 Heute umgetopft</button>
+        <button type="button" class="action-btn water" data-bulk="water" disabled>💧 Gegossen</button>
+        <button type="button" class="action-btn fert" data-bulk="fert" disabled>🌱 Gedüngt</button>
+      </div>
+    </div>
     <div id="empty" class="empty" hidden>
       <div class="empty-icon">🌿</div>
       <h2>Dein Garten ist noch leer</h2>
@@ -185,6 +194,11 @@
     <h2 class="page-title">Mehr</h2>
     <p class="page-sub">Daten, Erinnerungen und Einstellungen.</p>
 
+    <div class="section-title">Konto</div>
+    <div class="list-card">
+      <button class="list-item" id="account-btn"><span class="li-icon">👤</span><span class="li-text"><span id="account-title">Gast</span><div class="li-sub" id="account-sub">Daten nur auf diesem Gerät · Anmelden für alle Geräte</div></span><span class="status-pill" id="account-pill">Gast</span><span class="muted">›</span></button>
+    </div>
+
     <div class="section-title">Daten & Geräte</div>
     <div class="list-card">
       <button class="list-item" id="backup-menu-btn"><span class="li-icon">💾</span><span class="li-text">Sicherung & Gerätewechsel<div class="li-sub">Exportieren, teilen oder importieren</div></span><span class="muted">›</span></button>
@@ -198,7 +212,7 @@
     <div class="section-title">KI-Erkennung</div>
     <div class="list-card">
       <div class="list-item" style="cursor:default"><span class="li-icon">🔍</span><span class="li-text">Erkennungs-Server<div class="li-sub" id="api-sub">Prüfe Verbindung…</div></span><span class="status-pill" id="api-pill">…</span></div>
-      <button class="list-item" id="api-settings-btn"><span class="li-icon">⚙️</span><span class="li-text">Server-Adresse & Zugangscode<div class="li-sub">Nur nötig, wenn die App getrennt vom Server gehostet wird</div></span></button>
+      <button class="list-item" id="api-settings-btn"><span class="li-icon">⚙️</span><span class="li-text">Zugangscode<div class="li-sub">Eintragen, falls der Server einen Code verlangt</div></span></button>
     </div>
 
     <div class="section-title">Datenschutz</div>
@@ -263,6 +277,10 @@
         <div class="form-group"><label for="f-watered">Zuletzt gegossen</label><input id="f-watered" type="date"></div>
         <div class="form-group"><label for="f-fertilized">Zuletzt gedüngt</label><input id="f-fertilized" type="date"></div>
       </div>
+      <div class="form-row">
+        <div class="form-group" id="f-repotted-group"><label for="f-repotted">Zuletzt umgetopft</label><input id="f-repotted" type="date"><small class="muted" id="f-repotted-hint"></small></div>
+        <div class="form-group" id="f-mowed-group" hidden><label for="f-mowed">Zuletzt gemäht</label><input id="f-mowed" type="date"></div>
+      </div>
       <details>
         <summary class="muted" style="cursor:pointer;margin-bottom:10px">Eigene Intervalle (optional)</summary>
         <div class="form-row">
@@ -270,7 +288,7 @@
           <div class="form-group"><label for="f-fint">Düngen alle … Tage</label><input id="f-fint" type="number" min="1" max="180" placeholder="Standard der Art"></div>
         </div>
       </details>
-      <div class="form-group"><label for="f-notes">Notizen</label><textarea id="f-notes" rows="2" placeholder="Umgetopft am …, Steckling von …"></textarea></div>
+      <div class="form-group"><label for="f-notes">Notizen</label><textarea id="f-notes" rows="2" placeholder="Steckling von …, Standortwechsel …"></textarea></div>
       <input type="hidden" id="f-edit-id">
     </form>
   </div>
@@ -341,11 +359,40 @@
 <dialog id="api-dialog" aria-labelledby="api-title">
   <div class="modal-header"><span class="modal-title" id="api-title">Erkennungs-Server</span><button class="close-btn" data-close="api-dialog" aria-label="Schließen">✕</button></div>
   <div class="modal-body">
-    <p class="muted" style="margin-bottom:14px">Die Pflanzenerkennung läuft über eine kleine Server-Funktion (<code>/api/analyze</code>), die deinen KI-Schlüssel sicher verwahrt. Wird die App am selben Ort gehostet, bleibt das Feld leer.</p>
-    <div class="form-group"><label for="api-base">Server-Adresse (leer = gleiche Adresse wie die App)</label><input id="api-base" type="url" placeholder="https://meine-app.vercel.app"></div>
-    <div class="form-group"><label for="api-token">Zugangscode (optional, falls auf dem Server gesetzt)</label><input id="api-token" type="password" autocomplete="off"></div>
+    <p class="muted" style="margin-bottom:14px">Die Pflanzenerkennung läuft über eine kleine Server-Funktion, die den KI-Schlüssel sicher verwahrt. Hast du einen Zugangscode bekommen, trage ihn hier ein – Groß-/Kleinschreibung beachten.</p>
+    <div class="form-group"><label for="api-token">Zugangscode</label>
+      <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="api-token" class="masked grow" type="text" name="app-code" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore><button type="button" class="btn-ghost btn-sm" id="api-token-show">Anzeigen</button></div></div>
+    <details id="api-advanced"><summary class="muted" style="cursor:pointer;margin-bottom:10px">Erweitert: eigene Server-Adresse</summary>
+      <div class="form-group"><label for="api-base">Server-Adresse (leer lassen = gleiche Adresse wie die App)</label><input id="api-base" type="url" name="server-url" autocomplete="off" inputmode="url" spellcheck="false" placeholder="https://meine-app.vercel.app"><small class="muted">Nur nötig, wenn die App woanders liegt als der Server (z. B. GitHub Pages).</small></div>
+    </details>
+    <div id="api-result" aria-live="polite"></div>
   </div>
   <div class="modal-footer"><button class="btn-ghost" data-close="api-dialog">Abbrechen</button><button class="btn-primary" id="api-save-btn">Speichern & testen</button></div>
+</dialog>
+
+<!-- KONTO -->
+<dialog id="account-dialog" aria-labelledby="account-dlg-title">
+  <div class="modal-header"><div><span class="modal-title" id="account-dlg-title">Konto</span><div class="muted" id="account-dlg-sub"></div></div><button class="close-btn" data-close="account-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <div id="account-guest">
+      <p class="muted" style="margin-bottom:14px">Als <strong>Gast</strong> bleiben alle Daten nur auf diesem Gerät. Mit einem Konto werden Garten, Wünsche und Fotos auf unserem Server gespeichert und auf allen deinen Geräten abgeglichen. Vorhandene Pflanzen werden beim Anmelden übernommen.</p>
+      <div class="seg" role="tablist" style="margin-bottom:14px"><button type="button" class="tab active" id="acc-tab-login" role="tab">Anmelden</button><button type="button" class="tab" id="acc-tab-register" role="tab">Registrieren</button></div>
+      <form id="account-form" autocomplete="on">
+        <div class="form-group"><label for="acc-email">E-Mail</label><input id="acc-email" name="email" type="email" autocomplete="username" required inputmode="email" autocapitalize="none" spellcheck="false"></div>
+        <div class="form-group"><label for="acc-pw">Passwort</label><input id="acc-pw" name="password" type="password" autocomplete="current-password" required minlength="8"><small class="muted" id="acc-pw-hint">Mindestens 8 Zeichen</small></div>
+        <button type="submit" class="btn-primary btn-block" id="acc-submit">Anmelden</button>
+      </form>
+    </div>
+    <div id="account-user" hidden>
+      <div class="list-card sub-menu">
+        <div class="list-item" style="cursor:default"><span class="li-icon">🔄</span><span class="li-text">Synchronisierung<div class="li-sub" id="acc-sync-sub">–</div></span><button type="button" class="btn-ghost btn-sm" id="acc-sync-now">Jetzt</button></div>
+        <button class="list-item" id="acc-pw-change"><span class="li-icon">🔑</span><span class="li-text">Passwort ändern</span></button>
+        <button class="list-item" id="acc-logout"><span class="li-icon">🚪</span><span class="li-text">Abmelden<div class="li-sub">Weiter als Gast auf diesem Gerät</div></span></button>
+        <button class="list-item" id="acc-delete"><span class="li-icon">🗑</span><span class="li-text" style="color:var(--overdue)">Konto löschen<div class="li-sub">Entfernt alle Daten vom Server</div></span></button>
+      </div>
+    </div>
+    <div id="account-result" aria-live="polite"></div>
+  </div>
 </dialog>
 
 <!-- SICHERUNG (Untermenü) -->
@@ -357,7 +404,7 @@
       <button class="list-item" id="share-btn" hidden><span class="li-icon">📤</span><span class="li-text">Sicherung teilen<div class="li-sub">Direkt an ein anderes Gerät senden (AirDrop, Nearby, Messenger)</div></span></button>
       <button class="list-item" id="import-btn"><span class="li-icon">⬆️</span><span class="li-text">Sicherung importieren<div class="li-sub">Daten von einem anderen Gerät übernehmen</div></span></button>
     </div>
-    <input type="file" id="import-file" accept="application/json,.json" hidden>
+    <input type="file" id="import-file" accept="application/json,.json,text/plain,.txt" hidden>
   </div>
 </dialog>
 

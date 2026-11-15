@@ -54,6 +54,9 @@ js/api.js               Client für /api/analyze
 api/analyze.js          Serverless-Funktion (Vercel): Erkennung & Gesundheitscheck mit Claude
 api/event.js            Serverless-Funktion: nimmt anonyme Nutzungsereignisse entgegen (Postgres)
 api/stats.js            Serverless-Funktion: Auswertung, geschützt durch ADMIN_TOKEN
+api/auth.js, api/sync.js  Nutzerkonten (E-Mail/Passwort) und Synchronisation
+lib/auth.js             Passwort-Hashing, Sitzungen
+js/account.js           Client: Anmeldung, Abgleich im Hintergrund
 lib/db.js               Postgres-Verbindung (DATABASE_URL) und Tabellenanlage
 js/analytics.js         Client: Ereignisse sammeln, bündeln, senden; Opt-out
 stats.html              Auswertungsseite (Admin)
@@ -74,11 +77,13 @@ Umgebungsvariablen (siehe `.env.example`):
 | Variable | Pflicht | Bedeutung |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | ja | Schlüssel von platform.claude.com |
-| `ANTHROPIC_MODEL` | nein | Standard `claude-opus-5-5` |
+| `ANTHROPIC_MODEL_IDENTIFY` | nein | Modell für die Pflanzenerkennung, Standard `claude-haiku-5-5` |
+| `ANTHROPIC_MODEL_DIAGNOSE` | nein | Modell für den Gesundheitscheck, Standard `claude-sonnet-5-5` |
+| `ANTHROPIC_MODEL` | nein | Gemeinsame Überschreibung für beide, falls die zwei Variablen oben nicht gesetzt sind (z. B. `claude-opus-5-5`) |
 | `APP_TOKEN` | empfohlen bei öffentlicher URL | Zugangscode; in der App unter *Mehr → Server-Adresse & Zugangscode* eintragen |
 | `ALLOWED_ORIGIN` | nur bei getrenntem Hosting | erlaubte Ursprünge der App, kommagetrennt |
 
-Die Funktion nutzt den serverseitigen Modell-Fallback (`fallbacks: "default"`), damit ein abgelehnter Einzelfall nicht die ganze Analyse scheitern lässt. Pro Scan werden etwa 1 500–2 500 Token verbraucht, also wenige Cent.
+Der Gesundheitscheck (Sonnet) nutzt den serverseitigen Modell-Fallback (`fallbacks: "default"`), damit ein abgelehnter Einzelfall nicht die ganze Analyse scheitern lässt; für Haiku gibt es diesen Fallback nicht. Pro Scan werden grob 3 000–5 000 Token verbraucht. Kosten (Schätzung): eine Erkennung mit Haiku etwa 0,1 Cent, ein Gesundheitscheck mit Sonnet etwa 1–2 Cent (zum Vergleich: Opus für beides etwa 3 Cent pro Aufruf).
 
 ## Nutzungsstatistik aktivieren (Stufe 2)
 
@@ -99,6 +104,21 @@ Alte Daten werden automatisch gelöscht: Ein täglicher Vercel-Cron (`vercel.jso
 DELETE FROM events WHERE ts < now() - interval '24 months';
 ```
 
+## Nutzerkonten & Synchronisation
+
+Unter *Mehr → Konto* kann man sich mit E-Mail und Passwort registrieren bzw. anmelden. Ohne Anmeldung läuft die App als **Gast** wie bisher (alles nur auf dem Gerät).
+
+- **Speicher:** dieselbe Postgres-Datenbank wie die Statistik (`DATABASE_URL`). Tabellen `users`, `sessions`, `items` werden automatisch angelegt.
+- **Passwörter:** scrypt mit zufälligem Salt; Sitzungs-Token (180 Tage) werden nur als SHA-256-Hash gespeichert. Gleiche Fehlermeldung für unbekannte E-Mail und falsches Passwort, Sperre nach vielen Fehlversuchen.
+- **Offline-first:** IndexedDB bleibt die Arbeitskopie. Jede Änderung bekommt `updatedAt` und landet im Ausgang (`js/store.js`); `js/account.js` gleicht ca. 3 s nach einer Änderung, beim Öffnen und bei wiederhergestellter Verbindung ab (`/api/sync`, Pakete ≤ 3 MB wegen des Vercel-Limits). Konflikte: neuere Änderung gewinnt pro Pflanze/Wunsch. Der Abruf nutzt eine Server-Sequenz, damit abweichende Geräteuhren nichts verlieren.
+- **Beim Anmelden** werden vorhandene Gast-Daten ins Konto übernommen. Beim Abmelden bleiben die Daten wahlweise als Gast auf dem Gerät.
+- Nicht synchronisiert: Zugangscode, Server-Adresse, Statistik-Einwilligung/-Kennung, Erinnerungsstatus (gerätespezifisch).
+- Ohne `DATABASE_URL` zeigt die App nur den Gast-Modus.
+
+Test: `npm run test:accounts` (nutzt pg-mem, keine echte Datenbank nötig).
+
+Grenzen: keine „Passwort vergessen“-Funktion (bräuchte E-Mail-Versand, z. B. über Resend); Fotos liegen als Data-URL in der Datenbank – für sehr große Gärten wäre ein Objektspeicher (Vercel Blob) sparsamer.
+
 ## Veröffentlichen
 
 Schritt-für-Schritt-Anleitung bis zur Veröffentlichung (Hosting, Domain, Installation auf Geräten, App-Stores, Datenschutz): **[VEROEFFENTLICHUNG.md](VEROEFFENTLICHUNG.md)**.
@@ -111,7 +131,6 @@ Schritt-für-Schritt-Anleitung bis zur Veröffentlichung (Hosting, Domain, Insta
 
 ## Grenzen / mögliche nächste Schritte
 
-- **Kein automatischer Abgleich zwischen Geräten.** Dafür wäre ein Konto-Backend nötig (z. B. Supabase); Export/Import deckt den Gerätewechsel ab.
 - **Erinnerungen** erscheinen beim Öffnen der App (und als App-Badge). Echte Push-Benachrichtigungen im Hintergrund brauchen einen Push-Server.
 - Neue Pflanze mit Bild: Eintrag in `js/plants-more.js`, dann `node scripts/fetch-images.mjs "Name"` und `node scripts/make-credits.mjs`.
 - Die Pflanzendatenbank lässt sich in `js/plants-more.js` erweitern; neue Einträge sind sofort in Finder, Scan-Zuordnung und Autocomplete verfügbar.

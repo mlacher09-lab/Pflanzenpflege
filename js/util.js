@@ -72,21 +72,48 @@ export const currentSeasonName = () => SEASON_NAME[season()];
 export function waterInterval(p) { return p.waterInterval || seasonalWater(p.type); }
 export function fertInterval(p)  { return p.fertInterval || seasonalFert(p.type); }
 
+const VERB_DO = { gegossen: 'gießen', gedüngt: 'düngen', gemäht: 'mähen' };
 function status(last, interval, verb) {
+  const act = VERB_DO[verb] || verb;
   if (!last) return { cls: 'soon', text: `Noch nie ${verb}`, days: -999 };
   const next = addDays(last, interval);
   const diff = daysDiff(today(), next);
   if (diff < 0) return { cls: 'overdue', text: `${-diff} Tag${-diff === 1 ? '' : 'e'} überfällig`, days: diff, next };
-  if (diff === 0) return { cls: 'soon', text: `Heute ${verb === 'gegossen' ? 'gießen' : 'düngen'}!`, days: 0, next };
-  if (diff === 1) return { cls: 'soon', text: `Morgen ${verb === 'gegossen' ? 'gießen' : 'düngen'}`, days: 1, next };
-  return { cls: 'ok', text: `In ${diff} Tagen ${verb === 'gegossen' ? 'gießen' : 'düngen'}`, days: diff, next };
+  if (diff === 0) return { cls: 'soon', text: `Heute ${act}!`, days: 0, next };
+  if (diff === 1) return { cls: 'soon', text: `Morgen ${act}`, days: 1, next };
+  return { cls: 'ok', text: `In ${diff} Tagen ${act}`, days: diff, next };
 }
-export const waterStatus = p => status(p.lastWatered, waterInterval(p), 'gegossen');
-export const fertStatus  = p => fertInterval(p) === 0 ? { cls: 'ok', text: fertSeasonPaused(p) ? `${currentSeasonName()}pause – nicht düngen` : 'Kein Dünger nötig', days: 9999 } : status(p.lastFertilized, fertInterval(p), 'gedüngt');
+
+/** Düngepause nach dem Umtopfen (frische Erde ist vorgedüngt): { until, left } oder null. */
+export function repotPause(p) {
+  if (!p.lastRepotted) return null;
+  const rp = PLANT_DB[p.type]?.rp ?? 42;
+  if (!rp) return null;
+  const until = addDays(p.lastRepotted, rp);
+  const left = daysDiff(today(), until);
+  return left > 0 ? { until, left, days: rp } : null;
+}
+export const waterPaused = p => !p.waterInterval && !!PLANT_DB[p.type]?.wpause?.includes(season());
+export const waterStatus = p => waterPaused(p) ? { cls: 'ok', text: `${currentSeasonName()}pause – nicht gießen`, days: 9999 } : status(p.lastWatered, waterInterval(p), 'gegossen');
+export function fertStatus(p) {
+  if (fertInterval(p) === 0) return { cls: 'ok', text: fertSeasonPaused(p) ? `${currentSeasonName()}pause – nicht düngen` : 'Kein Dünger nötig', days: 9999 };
+  const rp = repotPause(p);
+  if (rp) return { cls: 'ok', text: `Umtopfpause – ab ${fmtDate(rp.until)} düngen`, days: rp.left, next: rp.until, repot: true };
+  return status(p.lastFertilized, fertInterval(p), 'gedüngt');
+}
+
+/** Mähintervall (nur Rasen) in der aktuellen Jahreszeit; 0 = keine Mäh-Erinnerung. */
+export const hasMow = p => !!PLANT_DB[p.type]?.mow;
+export function mowInterval(p, s = season()) { return hasMow(p) ? (p.mowInterval || PLANT_DB[p.type].mow[s] || 0) : 0; }
+export function mowStatus(p) {
+  if (!hasMow(p)) return null;
+  if (!mowInterval(p)) return { cls: 'ok', text: `${currentSeasonName()}: nicht mähen`, days: 9999 };
+  return status(p.lastMowed, mowInterval(p), 'gemäht');
+}
 export function urgencyClass(p) {
-  const w = waterStatus(p), f = fertStatus(p);
-  if (w.cls === 'overdue' || f.cls === 'overdue') return 'overdue';
-  if (w.cls === 'soon' || f.cls === 'soon') return 'soon';
+  const all = [waterStatus(p), fertStatus(p), mowStatus(p)].filter(Boolean);
+  if (all.some(x => x.cls === 'overdue')) return 'overdue';
+  if (all.some(x => x.cls === 'soon')) return 'soon';
   return 'ok';
 }
 
