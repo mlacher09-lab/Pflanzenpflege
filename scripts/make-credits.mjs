@@ -24,7 +24,7 @@ const html = `<!doctype html>
 <main class="legal">
   <a class="back" href="./?view=more">‹ Zurück zur App</a>
   <h1>Bildnachweise</h1>
-  <p class="stand">Die Pflanzenfotos in Finder, Wunschliste und Pflanzenbuch stammen aus <a href="https://commons.wikimedia.org" rel="noopener" target="_blank">Wikimedia Commons</a> und stehen unter den jeweils angegebenen freien Lizenzen. Sie wurden auf 480 Pixel Breite verkleinert und werden mit der App ausgeliefert. Eigene Fotos der Nutzerinnen und Nutzer ersetzen sie in der Anzeige.</p>
+  <p class="stand">Die Pflanzenfotos in Finder, Wunschliste und Mein Garten stammen aus <a href="https://commons.wikimedia.org" rel="noopener" target="_blank">Wikimedia Commons</a> und stehen unter den jeweils angegebenen freien Lizenzen. Sie wurden auf 480 Pixel Breite verkleinert und werden mit der App ausgeliefert. Eigene Fotos der Nutzerinnen und Nutzer ersetzen sie in der Anzeige.</p>
   <table>
     <tr><th></th><th>Pflanze</th><th>Urheber</th><th>Lizenz</th><th>Quelle</th></tr>
 ${rows}

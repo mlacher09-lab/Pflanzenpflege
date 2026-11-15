@@ -1,4 +1,4 @@
-// Pflanzenpflege – Hauptmodul: Navigation, Pflanzenbuch, Formulare, Detailansicht, Einstellungen
+// Pflanzenpflege – Hauptmodul: Navigation, Mein Garten, Formulare, Detailansicht, Einstellungen
 import { PLANT_DB, PLANT_NAMES, ROOMS, LIGHT_LEVELS, LEGACY_LIGHT, PET_LEVELS, resolvePlantName, searchPlants, seasonalTips, season, SEASON_NAME, SEASON_ICON } from './plants-db.js';
 import { store, uid } from './store.js';
 import { api } from './api.js';
@@ -8,7 +8,7 @@ import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
 import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.6.2';
+export const APP_VERSION = '2.6.3';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ function sorted(list) {
   const o = { overdue: 0, soon: 1, ok: 2 };
   return c.sort((a, b) => (o[urgencyClass(a)] - o[urgencyClass(b)]) || (waterStatus(a).days - waterStatus(b).days));
 }
-/** Suche im eigenen Pflanzenbuch: Spitzname, Art, wissenschaftlicher Name, Alias, Raum, Notizen. */
+/** Suche in Mein Garten: Spitzname, Art, wissenschaftlicher Name, Alias, Raum, Notizen. */
 function matchesQuery(p) {
   if (!plantQuery) return true;
   const db = PLANT_DB[p.type] || {};
@@ -271,7 +271,7 @@ async function saveForm() {
 }
 async function deleteCurrent() {
   const p = plants.find(x => x.id === editingId); if (!p) return;
-  if (!await confirmDialog(`„${p.nickname || p.type}“ wirklich aus dem Pflanzenbuch löschen?`, { okText: 'Löschen', danger: true })) return;
+  if (!await confirmDialog(`„${p.nickname || p.type}“ wirklich aus Mein Garten löschen?`, { okText: 'Löschen', danger: true })) return;
   await store.remove('plants', p.id);
   analytics.track('plant_deleted', { plant: p.type });
   plants = plants.filter(x => x.id !== p.id);
