@@ -8,7 +8,7 @@ import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
 import { analytics } from './analytics.js';
 
-export const APP_VERSION = '2.6.1';
+export const APP_VERSION = '2.6.2';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────

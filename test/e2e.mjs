@@ -427,6 +427,18 @@ await page.screenshot({ path: path.join(shots, '09-desktop.png') });
   const r = await dp.evaluate(() => { const b = document.getElementById('consent-dialog').getBoundingClientRect(); return { l: b.left, r: innerWidth - b.right, t: b.top, bo: innerHeight - b.bottom, w: b.width }; });
   check(Math.abs(r.l - r.r) < 2 && Math.abs(r.t - r.bo) < 2 && r.w >= 560, `Desktop: Einwilligung mittig und groß (Breite ${r.w}, Rand l/r ${r.l}/${r.r}, o/u ${r.t}/${r.bo})`);
   await dp.screenshot({ path: path.join(shots, '10-desktop-einwilligung.png') });
+  await dp.click('#consent-deny');
+  const fb = await dp.evaluate(() => getComputedStyle(document.querySelector('.modal-body')).flexBasis);
+  check(fb === 'auto', `Dialog-Inhalt mit flex-basis auto (Safari schrumpft sonst den Inhalt): ${fb}`);
+  await dp.click('.nav-btn[data-nav="more"]');
+  for (const [btn, dlg] of [['#backup-menu-btn', 'backup-dialog'], ['#privacy-menu-btn', 'privacy-dialog']]) {
+    await dp.click(btn);
+    const h = await dp.evaluate(id => { const b = document.querySelector(`#${id} .modal-body`); return [b.clientHeight, b.scrollHeight]; }, dlg);
+    check(h[1] - h[0] <= 1, `Desktop: ${dlg} zeigt alle Einträge ohne Scrollen (${h[0]}/${h[1]})`);
+    await dp.keyboard.press('Escape');
+  }
+  const nav = await dp.evaluate(() => [...document.querySelectorAll('.nav-btn')].map(b => b.getBoundingClientRect().bottom));
+  check(nav[nav.length - 1] < 500, `Desktop: Seitennavigation oben gebündelt (letzter Eintrag endet bei ${Math.round(nav[nav.length - 1])}px)`);
   await dctx.close();
 }
 
