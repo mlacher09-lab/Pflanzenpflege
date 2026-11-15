@@ -469,3 +469,9 @@ a.list-item:hover { background: var(--surface2); }
 input.masked { -webkit-text-security: disc; text-security: disc; }
 #api-result .ai-box, #api-result .spinner-row { margin-top: 12px; }
 #plant-grid.selecting { padding-bottom: 150px; }
+
+/* ---------- FOTO-VERGLEICH ---------- */
+.photo-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.photo-compare figure { margin: 0; }
+.photo-compare img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--rs); display: block; background: var(--surface2); }
+.photo-compare figcaption { font-size: 12px; color: var(--text-m); margin-top: 4px; }

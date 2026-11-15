@@ -1,8 +1,8 @@
 // Service Worker: App-Shell offline verfügbar machen, API-Aufrufe immer ans Netz.
-const VERSION = 'pfl-v2.7.0';
+const VERSION = 'pfl-v2.8.0';
 const SHELL = [
-  './', './index.html', './manifest.webmanifest', './css/app.css', './css/fonts.css', './impressum.html', './datenschutz.html',
-  './js/app.js', './js/api.js', './js/analytics.js', './js/plant-images.js', './js/plants-db.js', './js/plants-more.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js', './js/account.js',
+  './', './index.html', './manifest.webmanifest', './css/app.css', './css/features.css', './css/fonts.css', './impressum.html', './datenschutz.html',
+  './js/app.js', './js/api.js', './js/analytics.js', './js/plant-images.js', './js/plants-db.js', './js/plants-more.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js', './js/account.js', './js/household-ui.js', './js/weather.js', './js/vacation.js', './js/ical.js', './js/push.js',
   './fonts/dmsans-400-latin.woff2', './fonts/dmsans-500-latin.woff2', './fonts/dmsans-600-latin.woff2', './fonts/playfairdisplay-400-latin.woff2', './fonts/playfairdisplay-600-latin.woff2',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
 ];
@@ -37,4 +37,22 @@ self.addEventListener('fetch', e => {
     if (res.ok) caches.open(VERSION).then(c => c.put(req, res.clone()));
     return res;
   }).catch(() => caches.match(req).then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined))));
+});
+
+// ─── Web-Push: Pflege-Erinnerungen ───
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Pflanzenpflege', {
+    body: d.body || '', tag: d.tag || 'care', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
+    data: { url: d.url || '/' }, renotify: true,
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL(e.notification.data?.url || '/', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const c = list.find(w => w.url.startsWith(self.registration.scope));
+    return c ? c.focus() : self.clients.openWindow(url);
+  }));
 });

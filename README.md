@@ -9,7 +9,8 @@ als installierbare Web-App (PWA) für Handy, Tablet und Desktop. Ohne Build-Schr
 | **Scan** | Live-Kamera oder Galerie-Foto → Erkennung der Art (Top-3 mit Wahrscheinlichkeit), Zustand auf dem Foto, Übernahme in Mein Garten oder auf die Wunschliste; ohne Server: manuelle Zuordnung |
 | **Finder** | Licht, Luftfeuchte, Temperatur, Größe, Pflegeaufwand, haustiersicher, blühend, luftreinigend → bewertete Trefferliste (0–100 Punkte) mit Begründung |
 | **Wünsche** | Priorität, Wunsch-Standort, Notiz, Foto; „Gekauft“ überführt den Wunsch in Mein Garten |
-| **Mehr** | Untermenü „Sicherung & Gerätewechsel“ (exportieren/teilen/importieren), Erinnerungen, KI-Server-Einstellungen, Untermenü „Nutzungsstatistik & Cookies“, Design |
+| **Mehr** | Konto & gemeinsamer Garten, Sicherung & Gerätewechsel, Erinnerungen (in der App und optional Push), Regen-Hinweise, Urlaubsmodus, Kalender-Export, KI-Server-Einstellungen, Nutzungsstatistik & Cookies, Design |
+| **Pflege-Extras** | Düngepause nach dem Umtopfen, Umtopf-Erinnerung (alle `ry` Jahre, März–Juni), Ableger-Hinweis in der Saison, Rasen mit Mäh-Erinnerung, Vorher/Nachher-Vergleich (erstes und neuestes Foto), Mehrfachauswahl |
 | **Bilder** | 1 Foto pro Pflanzenart aus Wikimedia Commons (frei lizenziert, lokal gespeichert) in Finder, Wunschliste, Scan und Mein Garten; eigene Fotos haben Vorrang; Bildnachweise unter `bildnachweise.html` |
 | **Statistik** | Anonyme Ereignisse (welche Funktionen, welche Pflanzen) in Postgres; Auswertung unter `stats.html` mit Admin-Code |
 
@@ -119,6 +120,28 @@ Test: `npm run test:accounts` (nutzt pg-mem, keine echte Datenbank nötig).
 
 Grenzen: keine „Passwort vergessen“-Funktion (bräuchte E-Mail-Versand, z. B. über Resend); Fotos liegen als Data-URL in der Datenbank – für sehr große Gärten wäre ein Objektspeicher (Vercel Blob) sparsamer.
 
+## Gemeinsamer Garten (Haushalt / WG)
+
+*Mehr → Gemeinsamer Garten* (Konto nötig): Garten anlegen oder mit Einladungscode beitreten (max. 10 Mitglieder). Alle Mitglieder synchronisieren denselben Datenraum (`items.user_id` = Haushalts-ID, siehe `lib/space.js`) und sehen, wer zuletzt gegossen/gedüngt hat. Beim Verlassen kann eine Kopie in den persönlichen Garten übernommen werden; beim Abmelden wird der gemeinsame Garten vom Gerät entfernt (er bleibt im Haushalt). Test: `npm run test:household`.
+
+## Push-Erinnerungen (optional)
+
+Echte Benachrichtigungen auch bei geschlossener App, nur für die gewählten Kategorien (Gießen, Düngen, Umtopfen, Ableger, Rasen mähen) und nur für angemeldete Nutzer (der Server braucht die Pflanzendaten). Ein täglicher Vercel-Cron (`/api/push-cron`, 06:43 UTC) verschickt eine gebündelte Nachricht.
+
+| Variable | Bedeutung |
+|---|---|
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Schlüsselpaar, einmalig erzeugen: `npx web-push generate-vapid-keys` |
+| `VAPID_SUBJECT` | Kontakt für die Push-Dienste, z. B. `mailto:du@example.de` |
+| `CRON_SECRET` | wie bei der Bereinigung – ohne ihn verschickt der Cron nichts |
+
+Es werden nur Endpunkte der bekannten Push-Dienste (Google, Mozilla, Apple, Microsoft) angenommen. iOS: ab 16.4 und nur, wenn die App zum Home-Bildschirm hinzugefügt wurde. Test: `npm run test:push`.
+
+## Regen-Hinweise, Urlaubsmodus, Kalender
+
+- **Regen-Hinweise** (`js/weather.js`, opt-in): nur für Balkon-/Gartenpflanzen (`indoor:false` oder Raum wie „Balkon“). Beim Öffnen der App Hinweis bei Regen seit gestern, angesagtem Regen oder Frost. Daten von Open-Meteo (ohne Schlüssel), Koordinaten auf ca. 1 km gerundet, Ort nur auf dem Gerät gespeichert. Test: `node test/weather.test.mjs`.
+- **Urlaubsmodus** (`js/vacation.js`): was vor der Abreise gegossen werden muss, wer durchhält, wer Hilfe braucht (mit Terminen); Pflegeanleitung für Helfer teilen/drucken; Anleitungen zur Selbstbewässerung (DIY).
+- **Kalender-Export** (`js/ical.js`): Gieß-, Dünge- und Mähtermine der nächsten Wochen als `.ics`. Test: `node test/vacation.test.mjs`.
+
 ## Veröffentlichen
 
 Schritt-für-Schritt-Anleitung bis zur Veröffentlichung (Hosting, Domain, Installation auf Geräten, App-Stores, Datenschutz): **[VEROEFFENTLICHUNG.md](VEROEFFENTLICHUNG.md)**.
@@ -131,6 +154,9 @@ Schritt-für-Schritt-Anleitung bis zur Veröffentlichung (Hosting, Domain, Insta
 
 ## Grenzen / mögliche nächste Schritte
 
-- **Erinnerungen** erscheinen beim Öffnen der App (und als App-Badge). Echte Push-Benachrichtigungen im Hintergrund brauchen einen Push-Server.
+- **Später umsetzen (Erinnerung):** Licht messen mit Handykamera bzw. Lichtsensor als Hilfe für den Standort-Finder.
+- Zurückgestellt: QR-Etiketten, KI-Rückfragen, Schädlings-Lexikon, Ableger-Tausch.
+
+- **Erinnerungen** erscheinen beim Öffnen der App (und als App-Badge); Push im Hintergrund nur für angemeldete Nutzer nach Auswahl.
 - Neue Pflanze mit Bild: Eintrag in `js/plants-more.js`, dann `node scripts/fetch-images.mjs "Name"` und `node scripts/make-credits.mjs`.
 - Die Pflanzendatenbank lässt sich in `js/plants-more.js` erweitern; neue Einträge sind sofort in Finder, Scan-Zuordnung und Autocomplete verfügbar.

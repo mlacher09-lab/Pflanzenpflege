@@ -2,6 +2,7 @@
 // → { changes: [...], cursor, more }.  Last-write-wins pro Eintrag (updatedAt des Clients);
 // der Cursor basiert auf einer serverseitigen Sequenz (seq), damit Uhren-Unterschiede zwischen Geräten nichts verlieren.
 import { dbConfigured, getPool, ensureSchema } from '../lib/db.js';
+import { spaceOf, lockSpace } from '../lib/space.js';
 import { setCors, send, readBody, authenticate } from '../lib/auth.js';
 
 const MAX_BODY = 4 * 1024 * 1024;
@@ -33,8 +34,9 @@ export default async function handler(req, res) {
 
     client = await getPool().connect();
     await client.query('BEGIN');
-    // pro Nutzer serialisieren, damit die seq-Reihenfolge zum Commit passt
-    await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [me.id]);
+    // pro Datenraum serialisieren, damit die seq-Reihenfolge zum Commit passt
+    const space = await spaceOf(me.id, client);   // eigener Garten oder gemeinsamer Haushaltsgarten
+    await lockSpace(client, space);
     const mine = new Set(), rejected = [];
     for (const c of incoming) {
       if (!c || !syncable(c.store, c.id)) continue;
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
       if (!Number.isFinite(updatedAt) || updatedAt <= 0) continue;
       const deleted = !!c.deleted;
       if (!deleted && (!c.data || typeof c.data !== 'object' || Array.isArray(c.data))) continue;
-      const cur = await client.query('SELECT data, updated_at, deleted FROM items WHERE user_id = $1 AND store = $2 AND id = $3', [me.id, c.store, c.id]);
+      const cur = await client.query('SELECT data, updated_at, deleted FROM items WHERE user_id = $1 AND store = $2 AND id = $3', [space, c.store, c.id]);
       if (cur.rows.length && Number(cur.rows[0].updated_at) >= updatedAt) { // Server ist neuer oder gleich: Client bekommt den Serverstand
         const r = cur.rows[0];
         if (Number(r.updated_at) > updatedAt) rejected.push({ store: c.store, id: c.id, data: r.deleted ? null : r.data, updatedAt: Number(r.updated_at), deleted: !!r.deleted });
@@ -51,16 +53,16 @@ export default async function handler(req, res) {
       const data = deleted ? null : JSON.stringify(c.data);
       if (cur.rows.length) {
         await client.query(`UPDATE items SET data = $4, updated_at = $5, deleted = $6, seq = nextval('items_seq') WHERE user_id = $1 AND store = $2 AND id = $3`,
-          [me.id, c.store, c.id, data, updatedAt, deleted]);
+          [space, c.store, c.id, data, updatedAt, deleted]);
       } else {
         await client.query(`INSERT INTO items (user_id, store, id, data, updated_at, deleted, seq) VALUES ($1,$2,$3,$4,$5,$6,nextval('items_seq'))`,
-          [me.id, c.store, c.id, data, updatedAt, deleted]);
+          [space, c.store, c.id, data, updatedAt, deleted]);
       }
       mine.add(c.store + '\u0000' + c.id);
     }
     // Seq der gerade geschriebenen Zeilen, um sie nicht zurückzusenden (Cursor springt trotzdem darüber)
     const { rows } = await client.query(
-      'SELECT store, id, data, updated_at, deleted, seq FROM items WHERE user_id = $1 AND seq > $2 ORDER BY seq LIMIT 300', [me.id, since]);
+      'SELECT store, id, data, updated_at, deleted, seq FROM items WHERE user_id = $1 AND seq > $2 ORDER BY seq LIMIT 300', [space, since]);
     await client.query('COMMIT');
 
     const changes = [];

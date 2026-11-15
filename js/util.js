@@ -110,6 +110,28 @@ export function mowStatus(p) {
   if (!mowInterval(p)) return { cls: 'ok', text: `${currentSeasonName()}: nicht mähen`, days: 9999 };
   return status(p.lastMowed, mowInterval(p), 'gemäht');
 }
+// ─── Umtopf- und Ableger-Erinnerungen (in der App; Push nur nach Auswahl) ───
+// Datenfelder in plants-db.js: ry = umtopfen alle N Jahre (0 = nie), prop = { months:[1–12], how:"…" }
+const DAY_MS = 86400000;
+/** Umtopfen fällig? { due, next, years } – Bezug: letztes Umtopfen, sonst Hinzufügedatum. null = keine Erinnerung. */
+export function repotDue(p) {
+  const ry = PLANT_DB[p.type]?.ry;
+  if (!ry) return null;
+  const base = p.lastRepotted || p.addedAt;
+  if (!base) return null;
+  const [y, m, d] = base.split('-').map(Number);
+  const next = `${y + ry}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  // Umtopfen ist im Frühjahr am besten – fällig ab Erreichen des Datums, Hinweis nur März bis Juni
+  const due = daysDiff(today(), next) <= 0;
+  const month = new Date().getMonth() + 1;
+  return { due: due && month >= 3 && month <= 6, overdueOutOfSeason: due && !(month >= 3 && month <= 6), next, years: ry };
+}
+/** Gute Zeit für Ableger? { how } im passenden Monat, sonst null. */
+export function propagationNow(p, month = new Date().getMonth() + 1) {
+  const pr = PLANT_DB[p.type]?.prop;
+  return pr && pr.months?.includes(month) ? { how: pr.how || '' } : null;
+}
+
 export function urgencyClass(p) {
   const all = [waterStatus(p), fertStatus(p), mowStatus(p)].filter(Boolean);
   if (all.some(x => x.cls === 'overdue')) return 'overdue';

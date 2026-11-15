@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cleanup", "schedule": "17 3 * * *" }
+    { "path": "/api/cleanup", "schedule": "17 3 * * *" },
+    { "path": "/api/push-cron", "schedule": "43 6 * * *" }
   ],
   "headers": [
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }, { "key": "Service-Worker-Allowed", "value": "/" }] },
@@ -9,7 +10,7 @@
     { "source": "/(.*)", "headers": [
       { "key": "X-Content-Type-Options", "value": "nosniff" },
       { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-      { "key": "Permissions-Policy", "value": "camera=(self), geolocation=()" }
+      { "key": "Permissions-Policy", "value": "camera=(self), geolocation=(self)" }
     ] }
   ]
 }
