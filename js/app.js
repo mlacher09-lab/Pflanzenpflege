@@ -2,7 +2,7 @@
 import { PLANT_DB, PLANT_NAMES, ROOMS, LIGHT_LEVELS, LEGACY_LIGHT, PET_LEVELS, resolvePlantName, searchPlants, seasonalTips, season, SEASON_NAME, SEASON_ICON } from './plants-db.js';
 import { store, uid } from './store.js';
 import { api } from './api.js';
-import { esc, norm, today, addDays, fmtDate, waterStatus, fertStatus, mowStatus, mowInterval, hasMow, repotPause, waterPaused, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
+import { esc, norm, today, addDays, fmtDate, waterStatus, fertStatus, mowStatus, mowInterval, hasMow, repotPause, waterPaused, repotDue, propagationNow, daysDiff, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
 import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
 import { initWishlist, renderWishlist, reloadWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
@@ -113,7 +113,7 @@ function plantCard(p) {
     <div class="card-body"><div class="card-photo">${photo}</div>
       <div class="card-info"><div class="card-name">${esc(p.nickname || p.type)}</div>
         <div class="card-sci">${p.nickname ? esc(p.type) : esc(db.sci || '')}</div>
-        <div class="card-chips">${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}${rp ? `<span class="chip warn">🪴 umgetopft</span>` : ''}</div>
+        <div class="card-chips">${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}${rp ? `<span class="chip warn">🪴 umgetopft</span>` : repotReminder(p) ? `<span class="chip warn">🪴 Umtopfen?</span>` : ''}</div>
       </div></div>
     <div class="card-status">
       <div class="status-row"><div class="status-dot ${w.cls}"></div><span class="status-label">💧 Gießen</span><span class="status-val ${w.cls}">${w.text}</span></div>
@@ -186,35 +186,58 @@ async function careAll() {
   if (!due.length) return;
   if (!await confirmDialog(`${due.length} Pflanzen als ${k.verb} markieren?`, { okText: 'Ja, alle' })) return;
   const d = today();
-  for (const p of due) p[k.field] = d;
+  for (const p of due) stampCare(p, k.field, d);
   await store.putMany('plants', due);
   analytics.track('care', { kind: careKind, bulk: due.length });
   toast(`${k.btn.split(' ')[0]} ${due.length} Pflanzen ${k.verb}!`, 'success');
   renderPlants();
 }
+/** Umtopfen fällig und nicht auf „Später“ gesetzt (Erinnerung nur in der App; Push nur nach Auswahl). */
+export const repotReminder = p => { const r = repotDue(p); return r?.due && !(p.repotSnooze && daysDiff(today(), p.repotSnooze) > 0) ? r : null; };
+async function snoozeRepot(id) {
+  const p = plants.find(x => x.id === id); if (!p) return;
+  p.repotSnooze = addDays(today(), 30); await store.put('plants', p);
+  toast('🪴 Erinnerung in 30 Tagen wieder'); renderPlants();
+}
 function updateBadges() {
-  const count = plants.filter(p => urgencyClass(p) !== 'ok').length;
+  const count = plants.filter(p => urgencyClass(p) !== 'ok' || repotReminder(p)).length;
   for (const id of ['notif-badge', 'nav-badge']) { const b = $(id); b.hidden = !count; b.textContent = count; }
   if ('setAppBadge' in navigator) { (count ? navigator.setAppBadge(count) : navigator.clearAppBadge()).catch(() => {}); }
 }
 
 // ─── AKTIONEN ────────────────────────────────────────────────────────
+/** Pflege eintragen: Datum + (im gemeinsamen Garten) wer es war, z. B. lastWatered / lastWateredBy. */
+export function stampCare(p, field, date = today()) {
+  p[field] = date;
+  const who = account.user ? account.actorName?.() : null;
+  if (who) p[field + 'By'] = who; else delete p[field + 'By'];
+}
+const byWho = (p, field) => account.household && p[field + 'By'] ? ` (${esc(p[field + 'By'])})` : '';
+/** Mehrere Pflanzen auf einmal gießen (Wetter-Hinweis, Urlaubsmodus). */
+export async function markWateredMany(ids) {
+  const list = plants.filter(p => ids.includes(p.id)); if (!list.length) return;
+  list.forEach(p => stampCare(p, 'lastWatered'));
+  await store.putMany('plants', list);
+  analytics.track('care', { kind: 'water', bulk: list.length });
+  toast(`💧 ${list.length} ${list.length === 1 ? 'Pflanze' : 'Pflanzen'} als gegossen markiert`, 'success');
+  renderPlants();
+}
 async function markWatered(id) {
   const p = plants.find(x => x.id === id); if (!p) return;
-  p.lastWatered = today(); await store.put('plants', p);
+  stampCare(p, 'lastWatered'); await store.put('plants', p);
   analytics.track('care', { kind: 'water' });
   toast(`💧 ${p.nickname || p.type} gegossen!`, 'success'); renderPlants();
 }
 async function markFertilized(id) {
   const p = plants.find(x => x.id === id); if (!p) return;
-  p.lastFertilized = today(); await store.put('plants', p);
+  stampCare(p, 'lastFertilized'); await store.put('plants', p);
   analytics.track('care', { kind: 'fert' });
   toast(`🌱 ${p.nickname || p.type} gedüngt!`, 'success'); renderPlants();
 }
 
 async function markMowed(id) {
   const p = plants.find(x => x.id === id); if (!p) return;
-  p.lastMowed = today(); await store.put('plants', p);
+  stampCare(p, 'lastMowed'); await store.put('plants', p);
   analytics.track('care', { kind: 'mow' });
   toast(`✂️ ${p.nickname || p.type} gemäht!`, 'success'); renderPlants();
 }
@@ -222,7 +245,7 @@ async function markMowed(id) {
 async function markRepotted(ids) {
   const list = plants.filter(p => ids.includes(p.id)); if (!list.length) return;
   const d = today();
-  for (const p of list) p.lastRepotted = d;
+  for (const p of list) { stampCare(p, 'lastRepotted', d); delete p.repotSnooze; }
   await store.putMany('plants', list);
   analytics.track('care', { kind: 'repot', bulk: list.length });
   const one = list.length === 1 ? list[0] : null, rp = one && repotPause(one);
@@ -254,7 +277,7 @@ async function bulkAction(kind) {
   if (kind === 'repot') await markRepotted(ids);
   else {
     const k = CARE[kind], list = plants.filter(p => selected.has(p.id) && (!k.only || k.only(p)));
-    for (const p of list) p[k.field] = today();
+    for (const p of list) stampCare(p, k.field);
     await store.putMany('plants', list);
     analytics.track('care', { kind, bulk: list.length });
     toast(`${k.btn.split(' ')[0]} ${list.length} Pflanzen ${k.verb}`, 'success');
@@ -328,8 +351,9 @@ async function saveForm() {
     lastWatered: $('f-watered').value || null, lastFertilized: $('f-fertilized').value || null,
     lastRepotted: $('f-repotted').value || null, lastMowed: hasMow({ type }) ? ($('f-mowed').value || null) : (old?.lastMowed ?? null),
     waterInterval: Number($('f-wint').value) || null, fertInterval: Number($('f-fint').value) || null,
-    notes: $('f-notes').value.trim(), photo: pendingPhoto || null,
+    notes: $('f-notes').value.trim(),
   };
+  if (old) setNewPhoto(data, pendingPhoto || null); else { data.photo = pendingPhoto || null; data.photoDate = data.photo ? today() : null; }
   await store.put('plants', data);
   if (!editingId) analytics.track('plant_added', { plant: type, source: addSource, photo: !!data.photo, room: data.room ? 'ja' : 'nein' });
   plants = await store.all('plants');
@@ -393,6 +417,8 @@ export function openDetail(id) {
       <span class="next-date-chip fert">🌱 Düngen: <strong>${fertInterval(p) === 0 ? (fertSeasonPaused(p) ? `${currentSeasonName()}pause` : 'nicht nötig') : f.repot ? `ab ${fmtDate(f.next)}` : f.next ? fmtDate(f.next) : 'jetzt'}</strong></span>
       ${hasMow(p) ? `<span class="next-date-chip mow">✂️ Mähen: <strong>${!mowInterval(p) ? `${currentSeasonName()}pause` : mowStatus(p).next ? fmtDate(mowStatus(p).next) : 'jetzt'}</strong></span>` : ''}
     </div>
+    ${repotReminder(p) ? `<div class="ai-box" style="margin:-4px 0 14px">🪴 <strong>Zeit zum Umtopfen</strong> – ${esc(p.type)} am besten alle ${repotDue(p).years} Jahr${repotDue(p).years === 1 ? '' : 'e'} im Frühjahr in einen 2–4 cm größeren Topf setzen.<div class="row" style="margin-top:8px;gap:8px"><button class="btn-primary btn-sm" data-drepot="${p.id}">Heute umgetopft</button><button class="btn-ghost btn-sm" data-snooze="${p.id}">Später erinnern</button></div></div>` : ''}
+    ${propagationNow(p) ? `<div class="ai-box" style="margin:-4px 0 14px">✂️ <strong>Gute Zeit für Ableger:</strong> ${esc(propagationNow(p).how)}</div>` : ''}
     ${f.repot ? `<div class="ai-box" style="margin:-4px 0 14px">🪴 Umgetopft: ${fmtDate(p.lastRepotted)} – frische Erde enthält Dünger. <strong>Bis ${fmtDate(f.next)} nicht düngen</strong> (${repotPause(p).days / 7} Wochen Pause für ${esc(p.type)}).</div>` : ''}
     <div class="chips" style="margin:-6px 0 16px">
       ${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}
@@ -407,6 +433,7 @@ export function openDetail(id) {
       <div class="care-card"><div class="care-card-icon">💦</div><div class="care-card-label">Luftfeuchte</div><div class="care-card-val">${esc(db.hm || '–')}</div></div>
       <div class="care-card"><div class="care-card-icon">🎯</div><div class="care-card-label">Schwierigkeit</div><div class="care-card-val">${diffLabel}<span class="diff-dots">${dots}</span></div></div>
     </div>
+    ${photoCompare(p)}
     ${p.notes ? `<div class="tips-section"><h3>Notizen</h3><p style="font-size:14px;white-space:pre-wrap">${esc(p.notes)}</p></div>` : ''}
     ${db.tips ? `<div class="tips-section"><h3>Pflegetipps</h3><ul class="tips-list">${db.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
     ${tips.length ? `<div class="tips-section seasonal-tips"><h3>${SEASON_ICON[season()]} Saisontipps ${SEASON_NAME[season()]}</h3><ul class="tips-list">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
@@ -426,16 +453,40 @@ export function openDetail(id) {
       </div>
       <div id="diag-result"></div>
     </div>
-    <div style="margin-top:8px"><span class="muted">Hinzugefügt ${p.addedAt ? fmtDate(p.addedAt) : '–'} · zuletzt gegossen ${fmtDate(p.lastWatered)} · gedüngt ${fmtDate(p.lastFertilized)}${p.lastRepotted ? ` · umgetopft ${fmtDate(p.lastRepotted)}` : ''}${p.lastMowed ? ` · gemäht ${fmtDate(p.lastMowed)}` : ''}</span></div>`;
+    <div style="margin-top:8px"><span class="muted">Hinzugefügt ${p.addedAt ? fmtDate(p.addedAt) : '–'} · zuletzt gegossen ${fmtDate(p.lastWatered)}${byWho(p, 'lastWatered')} · gedüngt ${fmtDate(p.lastFertilized)}${byWho(p, 'lastFertilized')}${p.lastRepotted ? ` · umgetopft ${fmtDate(p.lastRepotted)}${byWho(p, 'lastRepotted')}` : ''}${p.lastMowed ? ` · gemäht ${fmtDate(p.lastMowed)}${byWho(p, 'lastMowed')}` : ''}</span></div>`;
   $('diag-pick').onclick = () => $('diag-file').click();
   $('diag-file').onchange = async e => {
     const file = e.target.files[0]; if (!file) return;
     diagPhoto = await compressImage(file);
-    $('diag-result').innerHTML = `<img src="${diagPhoto}" alt="" style="max-height:200px;border-radius:10px;margin-top:10px">`;
+    $('diag-result').innerHTML = `<img src="${diagPhoto}" alt="" style="max-height:200px;border-radius:10px;margin-top:10px"><div><button type="button" class="btn-ghost btn-sm" id="diag-keep" style="margin-top:8px">📸 Als aktuelles Foto speichern</button></div>`;
+    $('diag-keep').onclick = async () => { setNewPhoto(p, diagPhoto); await store.put('plants', p); toast('📸 Foto gespeichert – Vergleich mit dem ersten Foto in der Detailansicht', 'success'); renderPlants(); openDetail(p.id); };
     $('diag-run').disabled = false;
   };
   $('diag-run').onclick = () => runDiagnose(p);
+  $('photo-compare-reset')?.addEventListener('click', async () => {
+    if (!await confirmDialog('Vergleich zurücksetzen? Das erste Foto wird entfernt, das aktuelle bleibt.', { okText: 'Zurücksetzen' })) return;
+    delete p.firstPhoto; delete p.firstPhotoDate; await store.put('plants', p); openDetail(p.id);
+  });
   $('detail-dialog').showModal();
+}
+
+// ─── FOTO-VERGLEICH: nur erstes und neuestes Foto ────────────────────
+/** Neues Foto setzen; das allererste Foto bleibt für den Vorher/Nachher-Vergleich erhalten (alle dazwischen nicht). */
+export function setNewPhoto(p, src) {
+  if (src === p.photo) return;
+  if (p.photo && src && !p.firstPhoto) { p.firstPhoto = p.photo; p.firstPhotoDate = p.photoDate || p.addedAt || null; }
+  if (!src) { delete p.firstPhoto; delete p.firstPhotoDate; }
+  p.photo = src || null;
+  p.photoDate = src ? today() : null;
+}
+function photoCompare(p) {
+  if (!p.firstPhoto || !p.photo || p.firstPhoto === p.photo) return '';
+  const span = p.firstPhotoDate && p.photoDate ? daysDiff(p.firstPhotoDate, p.photoDate) : null;
+  const ago = span == null ? '' : span >= 60 ? `${Math.round(span / 30.4)} Monate` : `${span} Tage`;
+  const label = d => d ? new Date(d).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
+  return `<div class="tips-section"><h3>📸 Vorher / Nachher${ago ? ` <span class="muted" style="font-weight:400">· ${ago}</span>` : ''}</h3>
+    <div class="photo-compare"><figure><img src="${p.firstPhoto}" alt="Erstes Foto" loading="lazy"><figcaption>Erstes Foto · ${label(p.firstPhotoDate)}</figcaption></figure><figure><img src="${p.photo}" alt="Neuestes Foto" loading="lazy"><figcaption>Neuestes Foto · ${label(p.photoDate)}</figcaption></figure></div>
+    <button type="button" class="btn-ghost btn-sm" id="photo-compare-reset" style="margin-top:8px">Vergleich zurücksetzen</button></div>`;
 }
 async function runDiagnose(p) {
   const image = diagPhoto || p.photo;
@@ -458,19 +509,20 @@ async function runDiagnose(p) {
 
 // ─── BENACHRICHTIGUNGEN ──────────────────────────────────────────────
 function renderNotifPanel() {
-  const urgent = sorted(plants.filter(p => urgencyClass(p) !== 'ok'));
+  const urgent = sorted(plants.filter(p => urgencyClass(p) !== 'ok' || repotReminder(p)));
   const list = $('notif-list');
   list.innerHTML = urgent.length ? urgent.map(p => {
     const w = waterStatus(p), f = fertStatus(p), lines = [];
     if (w.cls !== 'ok') lines.push(`💧 ${w.text}`);
     if (f.cls !== 'ok') lines.push(`🌱 ${f.text}`);
     const m = mowStatus(p); if (m && m.cls !== 'ok') lines.push(`✂️ ${m.text}`);
+    if (repotReminder(p)) lines.push(`🪴 Umtopfen fällig (alle ${repotDue(p).years} J.)`);
     return `<div class="notif-item" data-open="${p.id}"><strong>${esc(p.nickname || p.type)}</strong><br><span class="muted">${lines.join(' · ')}</span></div>`;
   }).join('') : `<p class="muted" style="padding:6px 0">Alles im grünen Bereich! 🌿</p>`;
 }
 async function checkAndNotify() {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-  const due = plants.filter(p => urgencyClass(p) !== 'ok');
+  const due = plants.filter(p => urgencyClass(p) !== 'ok' || repotReminder(p));
   if (!due.length) return;
   const key = 'lastNotify', last = await store.getSetting(key);
   if (last === today()) return;
@@ -694,7 +746,7 @@ window.addEventListener('appinstalled', () => { $('install-banner').hidden = tru
 // ─── EVENTS ──────────────────────────────────────────────────────────
 function bindEvents() {
   document.addEventListener('click', async e => {
-    const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-mow],[data-edit],[data-dwater],[data-dfert],[data-dmow],[data-drepot],[data-care],[data-bulk],.tab');
+    const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-mow],[data-edit],[data-dwater],[data-dfert],[data-dmow],[data-drepot],[data-snooze],[data-care],[data-bulk],.tab');
     if (!t) return;
     if (selectMode && t.dataset.open && t.classList.contains('plant-card')) { toggleSelected(t.dataset.open); return; }
     if (t.dataset.nav) { navigate(t.dataset.nav); if (t.dataset.wishQuery != null) setWishQuery(t.dataset.wishQuery); }
@@ -707,6 +759,7 @@ function bindEvents() {
     else if (t.dataset.mow) { e.stopPropagation(); markMowed(t.dataset.mow); }
     else if (t.dataset.dmow) { await markMowed(t.dataset.dmow); $('detail-dialog').close(); }
     else if (t.dataset.drepot) { await markRepotted([t.dataset.drepot]); $('detail-dialog').close(); }
+    else if (t.dataset.snooze) { await snoozeRepot(t.dataset.snooze); $('detail-dialog').close(); }
     else if (t.dataset.bulk) bulkAction(t.dataset.bulk);
     else if (t.dataset.dwater) { await markWatered(t.dataset.dwater); $('detail-dialog').close(); }
     else if (t.dataset.dfert) { await markFertilized(t.dataset.dfert); $('detail-dialog').close(); }
