@@ -59,6 +59,7 @@ export const account = {
     await store.setSetting('local:authToken', r.token);
     await store.setSetting('local:authUser', r.user);
     await store.setSetting('local:syncCursor', 0);
+    this.lastSync = 0; await store.setSetting('local:lastSync', 0);
     await store.queueAll();          // vorhandene Gast-Daten ins Konto übernehmen
     this._emit();
     await this.sync();
@@ -126,6 +127,7 @@ export const account = {
       } catch (e) {
         if (e.offline) { this._set('offline'); return { offline: true }; }
         if (e.status === 401) { await this._forget(); this._set('guest', 'Sitzung abgelaufen – bitte erneut anmelden.'); return null; }
+        if (e.status === 413) e.message = 'Ein Eintrag ist zu groß für die Übertragung (max. 4 MB) – bitte das Foto dieser Pflanze neu aufnehmen oder entfernen.';
         this._set('error', e.message);
         return { error: e.message };
       } finally { syncing = null; }

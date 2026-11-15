@@ -228,7 +228,7 @@
 
     <div class="section-title">Über</div>
     <div class="list-card">
-      <div class="list-item" style="cursor:default"><span class="li-icon">🌿</span><span class="li-text">Pflanzenpflege <span id="app-version" class="muted"></span><div class="li-sub">Alle Daten bleiben auf deinem Gerät. Fotos werden nur für die Erkennung an den Server gesendet.</div></span></div>
+      <div class="list-item" style="cursor:default"><span class="li-icon">🌿</span><span class="li-text">Pflanzenpflege <span id="app-version" class="muted"></span><div class="li-sub">Als Gast bleiben alle Daten auf deinem Gerät; mit Konto werden sie auf dem Server abgeglichen. Fotos werden für die Erkennung an den Server gesendet.</div></span></div>
       <a class="list-item" href="datenschutz.html"><span class="li-icon">🔒</span><span class="li-text">Datenschutzerklärung<div class="li-sub">Welche Daten wohin gehen</div></span><span class="muted">›</span></a>
       <a class="list-item" href="impressum.html"><span class="li-icon">📄</span><span class="li-text">Impressum<div class="li-sub">Anbieterkennzeichnung</div></span><span class="muted">›</span></a>
       <a class="list-item" href="bildnachweise.html"><span class="li-icon">🖼</span><span class="li-text">Bildnachweise<div class="li-sub">Pflanzenfotos aus Wikimedia Commons</div></span><span class="muted">›</span></a>
@@ -434,6 +434,19 @@
     <p class="muted">Du kannst die Entscheidung jederzeit unter „Mehr → Nutzungsstatistik & Cookies“ ändern. Details in der <a href="datenschutz.html">Datenschutzerklärung</a>.</p>
   </div>
   <div class="modal-footer consent-footer"><button class="btn-ghost" id="consent-deny">Ablehnen</button><button class="btn-primary" id="consent-allow">Erlauben</button></div>
+</dialog>
+
+<dialog id="pw-dialog" aria-labelledby="pw-title">
+  <div class="modal-header"><h2 id="pw-title">Passwort</h2><button class="close-btn" data-close="pw-dialog" aria-label="Schließen">✕</button></div>
+  <div class="modal-body">
+    <p id="pw-msg" class="muted"></p>
+    <form id="pw-form" autocomplete="on">
+      <div class="form-group"><label for="pw-old">Aktuelles Passwort</label><input type="password" id="pw-old" autocomplete="current-password" required></div>
+      <div class="form-group" id="pw-new-group" hidden><label for="pw-new">Neues Passwort</label><input type="password" id="pw-new" autocomplete="new-password" minlength="8"><small class="muted">Mindestens 8 Zeichen</small></div>
+      <div id="pw-error" class="muted" aria-live="polite" style="color:var(--overdue)"></div>
+    </form>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn-ghost" data-close="pw-dialog">Abbrechen</button><button type="submit" class="btn-primary" id="pw-submit" form="pw-form">OK</button></div>
 </dialog>
 
 <!-- BESTÄTIGUNG -->

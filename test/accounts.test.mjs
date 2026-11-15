@@ -7,7 +7,9 @@ process.env.AUTH_FAIL_DELAY_MS = '0';
 const { setPool } = await import('../lib/db.js');
 const { Pool } = newDb().adapters.createPg();
 setPool(new Pool());
-const auth = (await import('../api/auth.js')).default;
+const { default: auth, _resetFails } = await import('../api/auth.js');
+const cleanup = (await import('../api/cleanup.js')).default;
+const { getPool } = await import('../lib/db.js');
 const sync = (await import('../api/sync.js')).default;
 
 let passed = 0;
@@ -61,6 +63,14 @@ await test('Brute-Force-Sperre nach vielen Fehlversuchen', async () => {
   let last;
   for (let i = 0; i < 12; i++) last = await post({ action: 'login', email: 'opfer@example.de', password: 'x' + i }, null, { 'x-forwarded-for': '203.0.113.9' });
   assert.equal(last.status, 429);
+});
+await test('Registrierungs-Bremse pro IP', async () => {
+  _resetFails();
+  const h = { 'x-forwarded-for': '198.51.100.7' };
+  let last;
+  for (let i = 0; i < 6; i++) last = await post({ action: 'register', email: `bremse${i}@example.de`, password: 'geheim1234' }, null, h);
+  assert.equal(last.status, 429);
+  _resetFails();
 });
 
 console.log('Synchronisation');
@@ -140,6 +150,16 @@ await test('Konto löschen braucht Passwort und entfernt alles', async () => {
   const re = await post({ action: 'register', email: 'anna@example.de', password: 'geheim1234' });
   assert.equal(re.status, 200);
   assert.equal((await push(re.body.token, 0, [])).body.changes.length, 0, 'keine Altdaten übrig');
+});
+await test('Cleanup löscht abgelaufene Sitzungen', async () => {
+  process.env.CRON_SECRET = 't';
+  const pool = getPool();
+  const { rows } = await pool.query('SELECT id FROM users LIMIT 1');
+  await pool.query(`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1,$2,$3)`, ['abgelaufen', rows[0].id, new Date(Date.now() - 86400_000)]);
+  const r = await call(cleanup, 'GET', undefined, 'falsch');
+  assert.equal(r.status, 401);
+  const ok = await call(cleanup, 'GET', undefined, null, { authorization: 'Bearer t' });
+  assert.equal(ok.status, 200); assert.ok(ok.body.sessions >= 1);
 });
 await test('ohne DATABASE_URL -> 503', async () => {
   const saved = process.env.DATABASE_URL; delete process.env.DATABASE_URL;
