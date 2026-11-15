@@ -149,9 +149,10 @@ export const store = {
     } catch { return 0; }
   },
 
-  /** Komplettes Backup als JSON (inkl. Fotos). */
+  /** Komplettes Backup als JSON (inkl. Fotos). Gerätespezifisches und Geheimes (Sitzungs-Token, Zugangscode, Ausgang) bleibt draußen. */
   async exportAll() {
-    const [plants, wishlist, settings] = await Promise.all([this.all('plants'), this.all('wishlist'), this.all('settings')]);
+    const [plants, wishlist, allSettings] = await Promise.all([this.all('plants'), this.all('wishlist'), this.all('settings')]);
+    const settings = allSettings.filter(s => s && s.id && syncable('settings', s.id));
     return { app: 'pflanzenpflege', version: 2, exportedAt: new Date().toISOString(), plants, wishlist, settings };
   },
 

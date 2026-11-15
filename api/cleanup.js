@@ -1,4 +1,4 @@
-// Löscht Statistik-Ereignisse, die älter als 24 Monate sind. Wird täglich von Vercel Cron aufgerufen (siehe vercel.json).
+// Löscht Statistik-Ereignisse, die älter als 24 Monate sind, sowie abgelaufene Anmelde-Sitzungen. Wird täglich von Vercel Cron aufgerufen (siehe vercel.json).
 // Vercel sendet dabei automatisch "Authorization: Bearer <CRON_SECRET>"; ohne gesetztes CRON_SECRET wird nichts gelöscht.
 import { dbConfigured, getPool, ensureSchema } from '../lib/db.js';
 
@@ -12,7 +12,8 @@ export default async function handler(req, res) {
   try {
     await ensureSchema();
     const r = await getPool().query(`DELETE FROM events WHERE ts < now() - interval '24 months'`);
-    return send(res, 200, { ok: true, deleted: r.rowCount });
+    const s = await getPool().query('DELETE FROM sessions WHERE expires_at < now()');
+    return send(res, 200, { ok: true, deleted: r.rowCount, sessions: s.rowCount });
   } catch (e) {
     console.error('cleanup.js', e.message);
     return send(res, 500, { error: 'Löschen fehlgeschlagen' });

@@ -549,8 +549,15 @@ async function importBackup(file) {
   try {
     const data = JSON.parse(await file.text());
     const n = data.plants?.length ?? 0;
-    const replace = plants.length ? !(await confirmDialog(`Sicherung mit ${n} Pflanzen gefunden. Mit vorhandenen ${plants.length} Pflanzen zusammenführen? („Abbrechen“ = vorhandene ersetzen)`, { okText: 'Zusammenführen' })) : false;
-    const r = await store.importAll(data, replace ? 'replace' : 'merge');
+    // Abbrechen/Escape bricht den Import ab; „Ersetzen“ ist eine eigene, ausdrückliche Entscheidung.
+    let mode = 'merge';
+    if (plants.length) {
+      if (!await confirmDialog(`Sicherung mit ${n} Pflanzen gefunden. Mit deinen vorhandenen ${plants.length} Pflanzen zusammenführen?`, { okText: 'Zusammenführen' })) {
+        if (!await confirmDialog(`Stattdessen die vorhandenen ${plants.length} Pflanzen und Wünsche durch die Sicherung ersetzen?`, { okText: 'Ersetzen', danger: true })) { toast('Import abgebrochen'); return; }
+        mode = 'replace';
+      }
+    }
+    const r = await store.importAll(data, mode);
     plants = await store.all('plants'); renderPlants(); await reloadWishlist();
     analytics.track('backup', { kind: 'import', plants: r.plants });
     toast(`⬆️ ${r.plants} Pflanzen, ${r.wishlist} Wünsche importiert`, 'success');
@@ -604,21 +611,63 @@ async function accountSubmit(e) {
   } catch (err) { accMsg(esc(err.message), true); }
   btn.disabled = false;
 }
-async function reloadAll() { plants = await store.all('plants'); renderPlants(); await reloadWishlist(); }
+async function reloadAll() {
+  plants = await store.all('plants'); renderPlants(); await reloadWishlist();
+  // Design kann von einem anderen Gerät kommen (wird synchronisiert)
+  const theme = await store.getSetting('theme', 'auto');
+  if (theme === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
+  $('theme-select').value = theme;
+}
 async function accountLogout() {
-  const keep = await confirmDialog('Abmelden? Die Daten bleiben als Gast auf diesem Gerät, bis du sie löschst. („Abbrechen“ = abgemeldet bleiben und lokale Daten löschen)', { okText: 'Daten behalten' });
-  await account.logout({ clearLocal: !keep });
+  // Abbrechen/Escape bricht nur ab – das Löschen lokaler Daten ist eine eigene, ausdrückliche Entscheidung.
+  if (!await confirmDialog('Abmelden? Deine Daten bleiben als Gast auf diesem Gerät.', { okText: 'Abmelden' })) return;
+  const pending = (await store.pendingChanges()).length;
+  if (pending && navigator.onLine) { const r = await account.sync(); if (!r || r.error || r.offline) { if (!await confirmDialog('Es gibt noch nicht abgeglichene Änderungen. Trotzdem abmelden?', { okText: 'Trotzdem abmelden', danger: true })) return; } }
+  await account.logout();
   await reloadAll(); renderAccount(); toast('Abgemeldet – du nutzt die App jetzt als Gast');
+  if (await confirmDialog('Sollen Pflanzen und Wünsche auch von diesem Gerät gelöscht werden? Auf dem Server bleiben sie erhalten.', { okText: 'Lokal löschen', danger: true })) {
+    await store.wipeLocal(); await reloadAll(); toast('🗑 Lokale Daten gelöscht');
+  }
+}
+function askPassword({ title, message, okText, danger = false, withNew = false }) {
+  return new Promise(resolve => {
+    const dlg = $('pw-dialog'), form = $('pw-form'), oldEl = $('pw-old'), newEl = $('pw-new'), err = $('pw-error'), ok = $('pw-submit');
+    $('pw-title').textContent = title || 'Passwort';
+    $('pw-msg').textContent = message || '';
+    oldEl.value = ''; newEl.value = ''; err.textContent = '';
+    $('pw-new-group').hidden = !withNew;
+    newEl.required = withNew;
+    ok.textContent = okText || 'OK';
+    ok.className = danger ? 'btn-danger' : 'btn-primary';
+    let result = null;
+    const onSubmit = e => {
+      e.preventDefault();
+      if (withNew && newEl.value.length < 8) { err.textContent = 'Das neue Passwort braucht mindestens 8 Zeichen.'; newEl.focus(); return; }
+      result = { old: oldEl.value, nw: newEl.value };
+      dlg.close();
+    };
+    const onClose = () => {
+      form.removeEventListener('submit', onSubmit);
+      dlg.removeEventListener('close', onClose);
+      resolve(result);
+    };
+    form.addEventListener('submit', onSubmit);
+    dlg.addEventListener('close', onClose);
+    dlg.showModal();
+    oldEl.focus();
+  });
 }
 async function accountDelete() {
-  const pw = prompt('Konto endgültig löschen? Alle Daten auf dem Server werden entfernt. Zur Bestätigung Passwort eingeben:');
-  if (!pw) return;
+  const r = await askPassword({ title: 'Konto löschen', message: 'Alle Daten auf dem Server werden entfernt. Zur Bestätigung dein Passwort eingeben.', okText: 'Endgültig löschen', danger: true });
+  if (!r || !r.old) return;
+  const pw = r.old;
   try { await account.deleteAccount(pw); renderAccount(); toast('Konto gelöscht – die Daten bleiben als Gast auf diesem Gerät'); }
   catch (err) { accMsg(esc(err.message), true); }
 }
 async function accountChangePw() {
-  const old = prompt('Aktuelles Passwort:'); if (!old) return;
-  const nw = prompt('Neues Passwort (mindestens 8 Zeichen):'); if (!nw) return;
+  const r = await askPassword({ title: 'Passwort ändern', message: 'Gib dein aktuelles und ein neues Passwort ein.', okText: 'Passwort ändern', withNew: true });
+  if (!r || !r.old || !r.nw) return;
+  const old = r.old, nw = r.nw;
   try { await account.changePassword(old, nw); toast('🔑 Passwort geändert', 'success'); }
   catch (err) { accMsg(esc(err.message), true); }
 }

@@ -8,8 +8,11 @@ import { setCors, send, readBody, normalizeEmail, validEmail, passwordError, has
 const fails = new Map();
 const MAX_FAILS = 10, WINDOW_MS = 15 * 60_000;
 const failDelay = () => new Promise(r => setTimeout(r, Number(process.env.AUTH_FAIL_DELAY_MS ?? 700)));
+function clientIp(req) {
+  return String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+}
 function failKeys(req, email) {
-  const ip = String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+  const ip = clientIp(req);
   return ip ? [`e:${email}`, `i:${ip}`] : [`e:${email}`];
 }
 function blocked(keys) {
@@ -21,7 +24,20 @@ function noteFail(keys) {
   if (fails.size > 5000) for (const [k, f] of fails) if (now - f.first >= WINDOW_MS) fails.delete(k);
   for (const k of keys) { const f = fails.get(k); if (!f || now - f.first >= WINDOW_MS) fails.set(k, { n: 1, first: now }); else f.n++; }
 }
-export function _resetFails() { fails.clear(); }
+
+// Registrierungs-Bremse: max. 5 Registrierungen (auch versuchte) pro IP im gleichen Zeitfenster.
+const regs = new Map();
+const MAX_REGS = 5;
+function regLimited(ip) {
+  if (!ip) return false;
+  const now = Date.now();
+  if (regs.size > 5000) for (const [k, f] of regs) if (now - f.first >= WINDOW_MS) regs.delete(k);
+  const f = regs.get(ip);
+  if (!f || now - f.first >= WINDOW_MS) { regs.set(ip, { n: 1, first: now }); return false; }
+  f.n++;
+  return f.n > MAX_REGS;
+}
+export function _resetFails() { fails.clear(); regs.clear(); }
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -45,6 +61,7 @@ export default async function handler(req, res) {
     const pool = getPool();
 
     if (action === 'register') {
+      if (regLimited(clientIp(req))) return send(res, 429, { error: 'Zu viele Registrierungen. Bitte versuche es später erneut.' });
       const email = normalizeEmail(body.email);
       if (!validEmail(email)) return send(res, 400, { error: 'Bitte gib eine gültige E-Mail-Adresse ein.' });
       const pe = passwordError(body.password);
@@ -93,9 +110,19 @@ export default async function handler(req, res) {
         noteFail(keys); await failDelay(); return send(res, 403, { error: 'Das Passwort ist falsch.' });
       }
       if (action === 'delete') {
-        await pool.query('DELETE FROM items WHERE user_id = $1', [me.id]);
-        await pool.query('DELETE FROM sessions WHERE user_id = $1', [me.id]);
-        await pool.query('DELETE FROM users WHERE id = $1', [me.id]);
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query('DELETE FROM items WHERE user_id = $1', [me.id]);
+          await client.query('DELETE FROM sessions WHERE user_id = $1', [me.id]);
+          await client.query('DELETE FROM users WHERE id = $1', [me.id]);
+          await client.query('COMMIT');
+        } catch (e) {
+          await client.query('ROLLBACK').catch(() => {});
+          throw e;
+        } finally {
+          client.release();
+        }
         return send(res, 200, { ok: true });
       }
       const pe = passwordError(body.newPassword);
