@@ -1,5 +1,5 @@
 // Service Worker: App-Shell offline verfügbar machen, API-Aufrufe immer ans Netz.
-const VERSION = 'pfl-v2.6.0';
+const VERSION = 'pfl-v2.6.1';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css', './css/fonts.css', './impressum.html', './datenschutz.html',
   './js/app.js', './js/api.js', './js/analytics.js', './js/plant-images.js', './js/plants-db.js', './js/plants-more.js', './js/store.js', './js/util.js', './js/scan.js', './js/finder.js', './js/wishlist.js',
