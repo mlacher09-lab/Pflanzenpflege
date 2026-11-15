@@ -2,13 +2,14 @@
 import { PLANT_DB, PLANT_NAMES, ROOMS, LIGHT_LEVELS, LEGACY_LIGHT, PET_LEVELS, resolvePlantName, searchPlants, seasonalTips, season, SEASON_NAME, SEASON_ICON } from './plants-db.js';
 import { store, uid } from './store.js';
 import { api } from './api.js';
-import { esc, norm, today, addDays, fmtDate, waterStatus, fertStatus, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
+import { esc, norm, today, addDays, fmtDate, waterStatus, fertStatus, mowStatus, mowInterval, hasMow, repotPause, waterPaused, urgencyClass, waterInterval, fertInterval, seasonalWater, fertSeasonPaused, currentSeasonName, compressImage, toast, miniMarkdown, confirmDialog, plantImg, plantImgCredit } from './util.js';
 import { initScan, onScanShow, onScanHide } from './scan.js';
 import { initFinder, renderFinder } from './finder.js';
-import { initWishlist, renderWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
+import { initWishlist, renderWishlist, reloadWishlist, openWishModal, getWishlist, setWishQuery } from './wishlist.js';
 import { analytics } from './analytics.js';
+import { account } from './account.js';
 
-export const APP_VERSION = '2.6.3';
+export const APP_VERSION = '2.7.0';
 const $ = id => document.getElementById(id);
 
 // ─── STATE ───────────────────────────────────────────────────────────
@@ -21,6 +22,8 @@ let pendingPhoto = null;
 let editingId = null;
 let addSource = 'form';
 let deferredInstall = null;
+let selectMode = false;
+const selected = new Set();
 
 export function getPlants() { return plants; }
 export async function reloadPlants() { plants = await store.all('plants'); renderPlants(); }
@@ -42,6 +45,7 @@ export function navigate(view, { push = true } = {}) {
   $('add-btn-label').textContent = view === 'wishlist' ? 'Wunsch' : 'Pflanze';
   $('hdr-title').textContent = TITLES[view];
   if (view === 'plants') requestAnimationFrame(updateTabFade);
+  else if (selectMode) setSelectMode(false);
   if (view === 'scan') onScanShow();
   if (view === 'finder') renderFinder();
   if (view === 'wishlist') renderWishlist();
@@ -71,8 +75,10 @@ function renderSummary() {
   if (!plants.length) { el.hidden = true; return; }
   el.hidden = false;
   el.innerHTML = ring('water', '💧', 'Gießen', plants.filter(p => waterStatus(p).cls === 'ok').length, plants.length)
-    + ring('fert', '🌱', 'Düngen', plants.filter(p => fertStatus(p).cls === 'ok').length, plants.length);
+    + ring('fert', '🌱', 'Düngen', plants.filter(p => fertStatus(p).cls === 'ok').length, plants.length)
+    + (lawns().some(p => mowInterval(p)) ? ring('mow', '✂️', 'Mähen', lawns().filter(p => mowStatus(p).cls === 'ok').length, lawns().length) : '');
 }
+const lawns = () => plants.filter(hasMow);
 function sorted(list) {
   const c = [...list];
   if (activeSort === 'name') return c.sort((a, b) => (a.nickname || a.type).localeCompare(b.nickname || b.type, 'de'));
@@ -101,18 +107,20 @@ function plantCard(p) {
   const db = PLANT_DB[p.type] || {};
   const w = waterStatus(p), f = fertStatus(p), urg = urgencyClass(p);
   const photo = p.photo || plantImg(p.type) ? `<img src="${p.photo || plantImg(p.type)}" alt="" loading="lazy">` : `<span>${db.e || '🪴'}</span>`;
-  return `<article class="plant-card" data-open="${p.id}" tabindex="0" role="button" aria-label="${esc(p.nickname || p.type)}">
-    <div class="card-urgency-bar ${urg}"></div>
+  const m = mowStatus(p), rp = repotPause(p), sel = selected.has(p.id);
+  return `<article class="plant-card${selectMode ? ' selecting' : ''}${sel ? ' selected' : ''}" data-open="${p.id}" tabindex="0" role="${selectMode ? 'checkbox' : 'button'}"${selectMode ? ` aria-checked="${sel}"` : ''} aria-label="${esc(p.nickname || p.type)}">
+    <div class="card-urgency-bar ${urg}"></div>${selectMode ? `<span class="card-check" aria-hidden="true">${sel ? '✓' : ''}</span>` : ''}
     <div class="card-body"><div class="card-photo">${photo}</div>
       <div class="card-info"><div class="card-name">${esc(p.nickname || p.type)}</div>
         <div class="card-sci">${p.nickname ? esc(p.type) : esc(db.sci || '')}</div>
-        <div class="card-chips">${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}</div>
+        <div class="card-chips">${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}${rp ? `<span class="chip warn">🪴 umgetopft</span>` : ''}</div>
       </div></div>
     <div class="card-status">
       <div class="status-row"><div class="status-dot ${w.cls}"></div><span class="status-label">💧 Gießen</span><span class="status-val ${w.cls}">${w.text}</span></div>
       <div class="status-row"><div class="status-dot ${f.cls}"></div><span class="status-label">🌱 Düngen</span><span class="status-val ${f.cls}">${f.text}</span></div>
+      ${m ? `<div class="status-row"><div class="status-dot ${m.cls}"></div><span class="status-label">✂️ Mähen</span><span class="status-val ${m.cls}">${m.text}</span></div>` : ''}
     </div>
-    <div class="card-actions"><button class="action-btn water" data-water="${p.id}">💧 Gegossen</button><button class="action-btn fert" data-fert="${p.id}">🌱 Gedüngt</button></div>
+    ${selectMode ? '' : `<div class="card-actions"><button class="action-btn water" data-water="${p.id}"${waterPaused(p) ? ' disabled' : ''}>💧 Gegossen</button>${m && mowInterval(p) ? `<button class="action-btn mow" data-mow="${p.id}">✂️ Gemäht</button>` : `<button class="action-btn fert" data-fert="${p.id}"${rp ? ' disabled' : ''}>🌱 Gedüngt</button>`}</div>`}
   </article>`;
 }
 export function renderPlants() {
@@ -133,6 +141,7 @@ export function renderPlants() {
     grid.innerHTML = list.length ? list.map(plantCard).join('') : plantQuery ? noHits() : `<p class="muted" style="grid-column:1/-1;padding:20px 0">Keine Pflanzen in dieser Kategorie – alles versorgt. 🌿</p>`;
   }
   updateBadges();
+  renderSelectBar();
 }
 
 function noHits() {
@@ -144,8 +153,10 @@ let careKind = 'water';
 const CARE = {
   water: { title: '💧 Gießen', status: p => waterStatus(p), attr: 'data-water', btn: '💧 Gegossen', all: '💧 Alle als gegossen markieren', done: 'Alle Pflanzen sind gegossen. 🌿', field: 'lastWatered', verb: 'gegossen' },
   fert:  { title: '🌱 Düngen', status: p => fertStatus(p),  attr: 'data-fert',  btn: '🌱 Gedüngt',   all: '🌱 Alle als gedüngt markieren',   done: 'Alle Pflanzen sind versorgt. 🌿', field: 'lastFertilized', verb: 'gedüngt' },
+  mow:   { title: '✂️ Mähen',  status: p => mowStatus(p),   attr: 'data-mow',   btn: '✂️ Gemäht',    all: '✂️ Alle als gemäht markieren',    done: 'Der Rasen ist gemäht. 🌾', field: 'lastMowed', verb: 'gemäht', only: hasMow },
 };
-const careDue = kind => plants.filter(p => CARE[kind].status(p).cls !== 'ok').sort((a, b) => CARE[kind].status(a).days - CARE[kind].status(b).days);
+const carePool = kind => CARE[kind].only ? plants.filter(CARE[kind].only) : plants;
+const careDue = kind => carePool(kind).filter(p => CARE[kind].status(p).cls !== 'ok').sort((a, b) => CARE[kind].status(a).days - CARE[kind].status(b).days);
 function careRow(p, kind) {
   const st = CARE[kind].status(p), img = p.photo || plantImg(p.type);
   return `<div class="care-item">
@@ -161,7 +172,7 @@ function renderCare() {
   const overdue = due.filter(p => k.status(p).cls === 'overdue').length;
   $('care-title').textContent = k.title;
   $('care-sub').textContent = due.length ? `${due.length} ${due.length === 1 ? 'Pflanze' : 'Pflanzen'} fällig${overdue ? ` · ${overdue} überfällig` : ''}` : `${plants.length} ${plants.length === 1 ? 'Pflanze' : 'Pflanzen'} versorgt`;
-  const upcoming = plants.filter(p => k.status(p).cls === 'ok' && k.status(p).next).sort((a, b) => k.status(a).days - k.status(b).days).slice(0, 5);
+  const upcoming = carePool(careKind).filter(p => k.status(p).cls === 'ok' && k.status(p).next).sort((a, b) => k.status(a).days - k.status(b).days).slice(0, 5);
   const paused = careKind === 'fert' && plants.some(fertSeasonPaused);
   $('care-body').innerHTML = (due.length ? due.map(p => careRow(p, careKind)).join('') : `<div class="care-empty"><div class="empty-icon">✅</div><p>${k.done}</p></div>`)
     + (paused ? `<p class="muted care-note">${SEASON_ICON[season()]} ${currentSeasonName()}pause: Die meisten Pflanzen werden jetzt nicht gedüngt – die Intervalle passen sich automatisch an die Jahreszeit an.</p>` : '')
@@ -178,7 +189,7 @@ async function careAll() {
   for (const p of due) p[k.field] = d;
   await store.putMany('plants', due);
   analytics.track('care', { kind: careKind, bulk: due.length });
-  toast(`${careKind === 'water' ? '💧' : '🌱'} ${due.length} Pflanzen ${k.verb}!`, 'success');
+  toast(`${k.btn.split(' ')[0]} ${due.length} Pflanzen ${k.verb}!`, 'success');
   renderPlants();
 }
 function updateBadges() {
@@ -201,6 +212,56 @@ async function markFertilized(id) {
   toast(`🌱 ${p.nickname || p.type} gedüngt!`, 'success'); renderPlants();
 }
 
+async function markMowed(id) {
+  const p = plants.find(x => x.id === id); if (!p) return;
+  p.lastMowed = today(); await store.put('plants', p);
+  analytics.track('care', { kind: 'mow' });
+  toast(`✂️ ${p.nickname || p.type} gemäht!`, 'success'); renderPlants();
+}
+/** Umtopfen eintragen (eine oder mehrere Pflanzen) – startet die Düngepause der jeweiligen Art. */
+async function markRepotted(ids) {
+  const list = plants.filter(p => ids.includes(p.id)); if (!list.length) return;
+  const d = today();
+  for (const p of list) p.lastRepotted = d;
+  await store.putMany('plants', list);
+  analytics.track('care', { kind: 'repot', bulk: list.length });
+  const one = list.length === 1 ? list[0] : null, rp = one && repotPause(one);
+  toast(one ? `🪴 ${one.nickname || one.type} umgetopft${rp ? ` – Düngepause bis ${fmtDate(rp.until)}` : ''}` : `🪴 ${list.length} Pflanzen umgetopft – Düngepausen gestartet`, 'success');
+  renderPlants();
+}
+
+// ─── MEHRFACHAUSWAHL ─────────────────────────────────────────────────
+function setSelectMode(on) {
+  selectMode = on; selected.clear();
+  $('select-btn').textContent = on ? 'Fertig' : '☑︎ Auswählen';
+  $('select-btn').setAttribute('aria-pressed', on);
+  renderPlants();
+}
+function toggleSelected(id) { selected.has(id) ? selected.delete(id) : selected.add(id); renderPlants(); }
+function visibleIds() { return [...$('plant-grid').querySelectorAll('.plant-card')].map(c => c.dataset.open); }
+function renderSelectBar() {
+  const bar = $('select-bar');
+  bar.hidden = !selectMode;
+  $('plant-grid').classList.toggle('selecting', selectMode);
+  if (!selectMode) return;
+  const n = selected.size, all = visibleIds();
+  $('select-count').textContent = n ? `${n} ausgewählt` : 'Pflanzen antippen';
+  $('select-all').textContent = all.length && all.every(id => selected.has(id)) ? 'Keine' : 'Alle';
+  bar.querySelectorAll('[data-bulk]').forEach(b => b.disabled = !n);
+}
+async function bulkAction(kind) {
+  const ids = [...selected]; if (!ids.length) return;
+  if (kind === 'repot') await markRepotted(ids);
+  else {
+    const k = CARE[kind], list = plants.filter(p => selected.has(p.id) && (!k.only || k.only(p)));
+    for (const p of list) p[k.field] = today();
+    await store.putMany('plants', list);
+    analytics.track('care', { kind, bulk: list.length });
+    toast(`${k.btn.split(' ')[0]} ${list.length} Pflanzen ${k.verb}`, 'success');
+  }
+  setSelectMode(false);
+}
+
 // ─── FORMULAR ────────────────────────────────────────────────────────
 function setPhotoPreview(dataURL) {
   pendingPhoto = dataURL;
@@ -212,6 +273,11 @@ function setPhotoPreview(dataURL) {
 function setLight(val) { document.querySelectorAll('input[name="light"]').forEach(r => r.checked = r.value === val); }
 function typeHint() {
   const key = resolvePlantName($('f-type').value);
+  const lawn = !!(key && PLANT_DB[key].mow);
+  $('f-mowed-group').hidden = !lawn;
+  $('f-repotted-group').hidden = lawn;
+  const rp = key ? PLANT_DB[key].rp : null;
+  $('f-repotted-hint').textContent = rp ? `Danach ${rp / 7} Wochen nicht düngen` : rp === 0 ? 'Keine Düngepause nötig' : '';
   $('f-type-hint').textContent = key ? `${PLANT_DB[key].e} ${key} · ${PLANT_DB[key].sci} · gießen alle ${seasonalWater(key)} Tage (${currentSeasonName()})` : ($('f-type').value.trim() ? 'Unbekannte Art – bitte aus der Liste wählen oder Scan nutzen' : '');
 }
 
@@ -226,6 +292,7 @@ export function openAddModal(prefill = {}) {
   $('f-room').value = prefill.room || '';
   setLight(prefill.light || (prefill.type && PLANT_DB[prefill.type]?.light?.[0]) || 'bright');
   $('f-watered').value = today(); $('f-fertilized').value = today();
+  $('f-repotted').value = ''; $('f-mowed').value = '';
   $('f-edit-id').value = '';
   setPhotoPreview(prefill.photo || null);
   typeHint();
@@ -239,6 +306,7 @@ export function openEditModal(id) {
   $('plant-form').reset();
   $('f-type').value = p.type; $('f-nick').value = p.nickname || ''; $('f-room').value = p.room || '';
   $('f-watered').value = p.lastWatered || ''; $('f-fertilized').value = p.lastFertilized || '';
+  $('f-repotted').value = p.lastRepotted || ''; $('f-mowed').value = p.lastMowed || '';
   $('f-wint').value = p.waterInterval || ''; $('f-fint').value = p.fertInterval || '';
   $('f-notes').value = p.notes || '';
   setLight(LEGACY_LIGHT[p.light] || p.light || 'bright');
@@ -258,6 +326,7 @@ async function saveForm() {
     type, nickname: $('f-nick').value.trim(), room: $('f-room').value.trim(),
     light: document.querySelector('input[name="light"]:checked')?.value || 'bright',
     lastWatered: $('f-watered').value || null, lastFertilized: $('f-fertilized').value || null,
+    lastRepotted: $('f-repotted').value || null, lastMowed: hasMow({ type }) ? ($('f-mowed').value || null) : (old?.lastMowed ?? null),
     waterInterval: Number($('f-wint').value) || null, fertInterval: Number($('f-fint').value) || null,
     notes: $('f-notes').value.trim(), photo: pendingPhoto || null,
   };
@@ -321,14 +390,17 @@ export function openDetail(id) {
   $('detail-body').innerHTML = `
     <div class="next-dates">
       <span class="next-date-chip water">💧 Gießen: <strong>${w.next ? fmtDate(w.next) : 'jetzt'}</strong></span>
-      <span class="next-date-chip fert">🌱 Düngen: <strong>${fertInterval(p) === 0 ? (fertSeasonPaused(p) ? `${currentSeasonName()}pause` : 'nicht nötig') : f.next ? fmtDate(f.next) : 'jetzt'}</strong></span>
+      <span class="next-date-chip fert">🌱 Düngen: <strong>${fertInterval(p) === 0 ? (fertSeasonPaused(p) ? `${currentSeasonName()}pause` : 'nicht nötig') : f.repot ? `ab ${fmtDate(f.next)}` : f.next ? fmtDate(f.next) : 'jetzt'}</strong></span>
+      ${hasMow(p) ? `<span class="next-date-chip mow">✂️ Mähen: <strong>${!mowInterval(p) ? `${currentSeasonName()}pause` : mowStatus(p).next ? fmtDate(mowStatus(p).next) : 'jetzt'}</strong></span>` : ''}
     </div>
+    ${f.repot ? `<div class="ai-box" style="margin:-4px 0 14px">🪴 Umgetopft: ${fmtDate(p.lastRepotted)} – frische Erde enthält Dünger. <strong>Bis ${fmtDate(f.next)} nicht düngen</strong> (${repotPause(p).days / 7} Wochen Pause für ${esc(p.type)}).</div>` : ''}
     <div class="chips" style="margin:-6px 0 16px">
       ${p.room ? `<span class="chip">📍 ${esc(p.room)}</span>` : ''}${p.light ? `<span class="chip">${lightIcon(p.light)} ${esc(lightLabel(p.light))}</span>` : ''}
       ${db.pet ? `<span class="chip ${petCls}">🐾 ${PET_LEVELS[db.pet]}</span>` : ''}${db.air ? `<span class="chip good">🍃 Luftreinigend</span>` : ''}
     </div>
     <div class="care-grid">
       <div class="care-card"><div class="care-card-icon">💧</div><div class="care-card-label">Gießrhythmus</div><div class="care-card-val">Alle ${waterInterval(p)} Tage <span class="muted">${p.waterInterval ? '(eigen)' : `(${currentSeasonName()})`}</span></div></div>
+      ${hasMow(p) ? `<div class="care-card"><div class="care-card-icon">✂️</div><div class="care-card-label">Mährhythmus</div><div class="care-card-val">${mowInterval(p) ? `Alle ${mowInterval(p)} Tage` : 'Pause'} <span class="muted">(${currentSeasonName()})</span></div></div>` : `<div class="care-card"><div class="care-card-icon">🪴</div><div class="care-card-label">Düngepause n. Umtopfen</div><div class="care-card-val">${db.rp ? `${db.rp / 7} Wochen` : 'keine'}</div></div>`}
       <div class="care-card"><div class="care-card-icon">🌱</div><div class="care-card-label">Düngeintervall</div><div class="care-card-val">${fertInterval(p) === 0 ? (fertSeasonPaused(p) ? `Pause <span class="muted">(${currentSeasonName()})</span>` : 'Nicht düngen') : `Alle ${fertInterval(p)} Tage <span class="muted">${p.fertInterval ? '(eigen)' : `(${currentSeasonName()})`}</span>`}</div></div>
       <div class="care-card"><div class="care-card-icon">☀️</div><div class="care-card-label">Licht</div><div class="care-card-val">${esc(db.lt || '–')}</div></div>
       <div class="care-card"><div class="care-card-icon">🌡️</div><div class="care-card-label">Temperatur</div><div class="care-card-val">${esc(db.tmp || '–')}</div></div>
@@ -340,7 +412,8 @@ export function openDetail(id) {
     ${tips.length ? `<div class="tips-section seasonal-tips"><h3>${SEASON_ICON[season()]} Saisontipps ${SEASON_NAME[season()]}</h3><ul class="tips-list">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
     <div class="detail-actions">
       <button class="btn-primary btn-water" data-dwater="${p.id}">💧 Jetzt gegossen</button>
-      <button class="btn-primary btn-fert" data-dfert="${p.id}">🌱 Jetzt gedüngt</button>
+      ${f.repot ? '' : `<button class="btn-primary btn-fert" data-dfert="${p.id}">🌱 Jetzt gedüngt</button>`}
+      ${hasMow(p) ? `<button class="btn-primary btn-mow" data-dmow="${p.id}">✂️ Jetzt gemäht</button>` : `<button class="btn-ghost" data-drepot="${p.id}">🪴 Heute umgetopft</button>`}
       <button class="btn-ghost" data-edit="${p.id}">✏️ Bearbeiten</button>
     </div>
     <div class="tips-section">
@@ -353,7 +426,7 @@ export function openDetail(id) {
       </div>
       <div id="diag-result"></div>
     </div>
-    <div style="margin-top:8px"><span class="muted">Hinzugefügt ${p.addedAt ? fmtDate(p.addedAt) : '–'} · zuletzt gegossen ${fmtDate(p.lastWatered)} · gedüngt ${fmtDate(p.lastFertilized)}</span></div>`;
+    <div style="margin-top:8px"><span class="muted">Hinzugefügt ${p.addedAt ? fmtDate(p.addedAt) : '–'} · zuletzt gegossen ${fmtDate(p.lastWatered)} · gedüngt ${fmtDate(p.lastFertilized)}${p.lastRepotted ? ` · umgetopft ${fmtDate(p.lastRepotted)}` : ''}${p.lastMowed ? ` · gemäht ${fmtDate(p.lastMowed)}` : ''}</span></div>`;
   $('diag-pick').onclick = () => $('diag-file').click();
   $('diag-file').onchange = async e => {
     const file = e.target.files[0]; if (!file) return;
@@ -391,6 +464,7 @@ function renderNotifPanel() {
     const w = waterStatus(p), f = fertStatus(p), lines = [];
     if (w.cls !== 'ok') lines.push(`💧 ${w.text}`);
     if (f.cls !== 'ok') lines.push(`🌱 ${f.text}`);
+    const m = mowStatus(p); if (m && m.cls !== 'ok') lines.push(`✂️ ${m.text}`);
     return `<div class="notif-item" data-open="${p.id}"><strong>${esc(p.nickname || p.type)}</strong><br><span class="muted">${lines.join(' · ')}</span></div>`;
   }).join('') : `<p class="muted" style="padding:6px 0">Alles im grünen Bereich! 🌿</p>`;
 }
@@ -441,19 +515,35 @@ function askConsent() {
   dlg.addEventListener('cancel', e => e.preventDefault());   // Esc schließt nicht ohne Entscheidung
   dlg.showModal();
 }
-async function exportBackup(share = false) {
+// Teilen braucht eine frische Nutzergeste: Safari/iOS (und teils Chrome) lehnen navigator.share() ab,
+// wenn vorher asynchron (IndexedDB, JSON.stringify großer Fotos) gearbeitet wurde. Deshalb wird die
+// Sicherung schon beim Öffnen des Dialogs vorbereitet und beim Tippen sofort geteilt.
+let preparedBackup = null;
+async function prepareBackup() {
   const data = await store.exportAll();
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const name = `pflanzenpflege-${today()}.json`;
-  analytics.track('backup', { kind: share ? 'share' : 'export', plants: data.plants.length });
-  if (share) {
-    const file = new File([blob], name, { type: 'application/json' });
-    if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Pflanzenpflege-Sicherung' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
-    toast('Teilen nicht möglich – Datei wird heruntergeladen');
-  }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  const json = JSON.stringify(data);
+  const name = `pflanzenpflege-${today()}`;
+  // Manche Android-Browser lassen .json nicht zum Teilen zu – dann als .txt (Import akzeptiert beides).
+  const files = [new File([json], `${name}.json`, { type: 'application/json' }), new File([json], `${name}.txt`, { type: 'text/plain' })];
+  const shareFile = files.find(f => navigator.canShare?.({ files: [f] })) || null;
+  preparedBackup = { data, blob: new Blob([json], { type: 'application/json' }), name: `${name}.json`, shareFile };
+  return preparedBackup;
+}
+function shareBackup() {
+  const b = preparedBackup;
+  if (!b?.shareFile) { toast('Teilen wird auf diesem Gerät nicht unterstützt – Datei wird heruntergeladen'); exportBackup(); return; }
+  analytics.track('backup', { kind: 'share', plants: b.data.plants.length });
+  // Kein await vor share(): die Nutzergeste muss erhalten bleiben
+  navigator.share({ files: [b.shareFile], title: 'Pflanzenpflege-Sicherung', text: `${b.data.plants.length} Pflanzen · ${today()}` })
+    .then(() => toast('📤 Sicherung geteilt', 'success'))
+    .catch(e => { if (e.name !== 'AbortError') { toast('Teilen fehlgeschlagen – Datei wird heruntergeladen', 'error'); exportBackup(); } });
+}
+async function exportBackup() {
+  const b = preparedBackup || await prepareBackup();
+  analytics.track('backup', { kind: 'export', plants: b.data.plants.length });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b.blob); a.download = b.name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  toast(`⬇️ ${data.plants.length} Pflanzen exportiert`, 'success');
+  toast(`⬇️ ${b.data.plants.length} Pflanzen exportiert`, 'success');
 }
 async function importBackup(file) {
   try {
@@ -461,7 +551,7 @@ async function importBackup(file) {
     const n = data.plants?.length ?? 0;
     const replace = plants.length ? !(await confirmDialog(`Sicherung mit ${n} Pflanzen gefunden. Mit vorhandenen ${plants.length} Pflanzen zusammenführen? („Abbrechen“ = vorhandene ersetzen)`, { okText: 'Zusammenführen' })) : false;
     const r = await store.importAll(data, replace ? 'replace' : 'merge');
-    plants = await store.all('plants'); renderPlants(); await renderWishlist();
+    plants = await store.all('plants'); renderPlants(); await reloadWishlist();
     analytics.track('backup', { kind: 'import', plants: r.plants });
     toast(`⬆️ ${r.plants} Pflanzen, ${r.wishlist} Wünsche importiert`, 'success');
   } catch (e) { toast(`Import fehlgeschlagen: ${e.message}`, 'error'); }
@@ -469,6 +559,68 @@ async function importBackup(file) {
 async function applyTheme(val) {
   if (val === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = val;
   await store.setSetting('theme', val);
+}
+
+// ─── KONTO ───────────────────────────────────────────────────────────
+let accMode = 'login';
+function fmtAgo(ms) { if (!ms) return 'noch nie'; const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'gerade eben' : m < 60 ? `vor ${m} Min.` : new Date(ms).toLocaleString('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+const SYNC_TEXT = { syncing: 'Wird abgeglichen…', synced: 'Abgeglichen', offline: 'Offline – wird später abgeglichen', error: 'Fehler beim Abgleich' };
+function renderAccount() {
+  const u = account.user, pill = $('account-pill');
+  $('account-title').textContent = u ? u.email : 'Gast';
+  if (!u) {
+    pill.textContent = 'Gast'; pill.className = 'status-pill';
+    $('account-sub').textContent = account.configured === false ? 'Daten nur auf diesem Gerät (Konten auf diesem Server nicht eingerichtet)' : 'Daten nur auf diesem Gerät · Anmelden für alle Geräte';
+  } else {
+    const st = account.status;
+    pill.textContent = st === 'synced' ? 'Sync ✓' : st === 'syncing' ? 'Sync…' : st === 'offline' ? 'Offline' : st === 'error' ? 'Fehler' : 'Konto';
+    pill.className = `status-pill${st === 'synced' ? ' ok' : st === 'error' || st === 'offline' ? ' warn' : ''}`;
+    $('account-sub').textContent = `${SYNC_TEXT[st] || 'Angemeldet'} · zuletzt ${fmtAgo(account.lastSync)}`;
+  }
+  if ($('account-dialog').open) renderAccountDialog();
+}
+function renderAccountDialog() {
+  const u = account.user;
+  $('account-guest').hidden = !!u; $('account-user').hidden = !u;
+  $('account-dlg-sub').textContent = u ? `Angemeldet als ${u.email}` : 'Du nutzt die App als Gast';
+  $('acc-sync-sub').textContent = `${SYNC_TEXT[account.status] || '–'} · zuletzt ${fmtAgo(account.lastSync)}`;
+  $('acc-tab-login').classList.toggle('active', accMode === 'login');
+  $('acc-tab-register').classList.toggle('active', accMode === 'register');
+  $('acc-submit').textContent = accMode === 'login' ? 'Anmelden' : 'Konto erstellen';
+  $('acc-pw').autocomplete = accMode === 'login' ? 'current-password' : 'new-password';
+  $('acc-pw-hint').hidden = accMode === 'login';
+}
+function accMsg(html, err = false) { $('account-result').innerHTML = html ? `<div class="ai-box${err ? ' error' : ''}" style="margin-top:12px">${html}</div>` : ''; }
+async function accountSubmit(e) {
+  e.preventDefault();
+  const email = $('acc-email').value.trim(), pw = $('acc-pw').value, btn = $('acc-submit');
+  btn.disabled = true; accMsg('<div class="spinner-row"><div class="spinner"></div>Bitte warten…</div>');
+  try {
+    if (accMode === 'register') await account.register(email, pw); else await account.login(email, pw);
+    $('acc-pw').value = ''; accMsg('');
+    await reloadAll();
+    toast(accMode === 'register' ? '🎉 Konto erstellt – deine Pflanzen sind jetzt gesichert' : `👋 Angemeldet als ${email}`, 'success');
+    renderAccount();
+  } catch (err) { accMsg(esc(err.message), true); }
+  btn.disabled = false;
+}
+async function reloadAll() { plants = await store.all('plants'); renderPlants(); await reloadWishlist(); }
+async function accountLogout() {
+  const keep = await confirmDialog('Abmelden? Die Daten bleiben als Gast auf diesem Gerät, bis du sie löschst. („Abbrechen“ = abgemeldet bleiben und lokale Daten löschen)', { okText: 'Daten behalten' });
+  await account.logout({ clearLocal: !keep });
+  await reloadAll(); renderAccount(); toast('Abgemeldet – du nutzt die App jetzt als Gast');
+}
+async function accountDelete() {
+  const pw = prompt('Konto endgültig löschen? Alle Daten auf dem Server werden entfernt. Zur Bestätigung Passwort eingeben:');
+  if (!pw) return;
+  try { await account.deleteAccount(pw); renderAccount(); toast('Konto gelöscht – die Daten bleiben als Gast auf diesem Gerät'); }
+  catch (err) { accMsg(esc(err.message), true); }
+}
+async function accountChangePw() {
+  const old = prompt('Aktuelles Passwort:'); if (!old) return;
+  const nw = prompt('Neues Passwort (mindestens 8 Zeichen):'); if (!nw) return;
+  try { await account.changePassword(old, nw); toast('🔑 Passwort geändert', 'success'); }
+  catch (err) { accMsg(esc(err.message), true); }
 }
 
 // ─── SERVICE WORKER / INSTALL ────────────────────────────────────────
@@ -493,8 +645,9 @@ window.addEventListener('appinstalled', () => { $('install-banner').hidden = tru
 // ─── EVENTS ──────────────────────────────────────────────────────────
 function bindEvents() {
   document.addEventListener('click', async e => {
-    const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-edit],[data-dwater],[data-dfert],[data-care],.tab');
+    const t = e.target.closest('[data-nav],[data-action],[data-close],[data-open],[data-water],[data-fert],[data-mow],[data-edit],[data-dwater],[data-dfert],[data-dmow],[data-drepot],[data-care],[data-bulk],.tab');
     if (!t) return;
+    if (selectMode && t.dataset.open && t.classList.contains('plant-card')) { toggleSelected(t.dataset.open); return; }
     if (t.dataset.nav) { navigate(t.dataset.nav); if (t.dataset.wishQuery != null) setWishQuery(t.dataset.wishQuery); }
     else if (t.dataset.action === 'add-plant') openAddModal();
     else if (t.dataset.action === 'add-wish') openWishModal();
@@ -502,13 +655,20 @@ function bindEvents() {
     else if (t.dataset.open) { $('notif-panel').hidden = true; openDetail(t.dataset.open); }
     else if (t.dataset.water) { e.stopPropagation(); markWatered(t.dataset.water); }
     else if (t.dataset.fert) { e.stopPropagation(); markFertilized(t.dataset.fert); }
+    else if (t.dataset.mow) { e.stopPropagation(); markMowed(t.dataset.mow); }
+    else if (t.dataset.dmow) { await markMowed(t.dataset.dmow); $('detail-dialog').close(); }
+    else if (t.dataset.drepot) { await markRepotted([t.dataset.drepot]); $('detail-dialog').close(); }
+    else if (t.dataset.bulk) bulkAction(t.dataset.bulk);
     else if (t.dataset.dwater) { await markWatered(t.dataset.dwater); $('detail-dialog').close(); }
     else if (t.dataset.dfert) { await markFertilized(t.dataset.dfert); $('detail-dialog').close(); }
     else if (t.dataset.edit) openEditModal(t.dataset.edit);
     else if (t.dataset.care) openCare(t.dataset.care);
     else if (t.classList.contains('tab') && t.dataset.tab) { activeTab = t.dataset.tab; document.querySelectorAll('#plants-tabs .tab').forEach(x => x.classList.toggle('active', x === t)); t.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }); renderPlants(); }
   });
-  document.addEventListener('keydown', e => { const c = e.target.closest?.('.plant-card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(c.dataset.open); } });
+  document.addEventListener('keydown', e => { const c = e.target.closest?.('.plant-card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); selectMode ? toggleSelected(c.dataset.open) : openDetail(c.dataset.open); } if (e.key === 'Escape' && selectMode && !document.querySelector('dialog[open]')) setSelectMode(false); });
+  $('select-btn').onclick = () => setSelectMode(!selectMode);
+  $('select-cancel').onclick = () => setSelectMode(false);
+  $('select-all').onclick = () => { const ids = visibleIds(); const all = ids.every(id => selected.has(id)); ids.forEach(id => all ? selected.delete(id) : selected.add(id)); renderPlants(); };
   $('sort-select').onchange = e => { activeSort = e.target.value; renderPlants(); };
   const search = $('plant-search');
   search.addEventListener('input', () => { plantQuery = search.value.trim(); $('plant-search-clear').hidden = !search.value; renderPlants(); });
@@ -526,10 +686,15 @@ function bindEvents() {
   attachAutocomplete($('f-type'), $('f-type-ac'), typeHint);
   $('notif-btn').onclick = e => { e.stopPropagation(); const p = $('notif-panel'); p.hidden = !p.hidden; if (!p.hidden) renderNotifPanel(); };
   document.addEventListener('click', e => { const p = $('notif-panel'); if (!p.hidden && !p.contains(e.target) && !$('notif-btn').contains(e.target)) p.hidden = true; });
-  $('backup-menu-btn').onclick = () => { $('share-btn').hidden = !(navigator.share && navigator.canShare); $('backup-dialog').showModal(); };
+  $('backup-menu-btn').onclick = () => {
+    preparedBackup = null;
+    const sb = $('share-btn'); sb.hidden = !(navigator.share && navigator.canShare); sb.disabled = true;
+    $('backup-dialog').showModal();
+    prepareBackup().then(b => { sb.disabled = false; if (!b.shareFile) sb.hidden = true; }).catch(() => { sb.hidden = true; });
+  };
   $('privacy-menu-btn').onclick = () => { $('analytics-toggle').checked = analytics.enabled; $('privacy-dialog').showModal(); };
-  $('export-btn').onclick = () => { $('backup-dialog').close(); exportBackup(false); };
-  $('share-btn').onclick = () => { $('backup-dialog').close(); exportBackup(true); };
+  $('export-btn').onclick = () => { $('backup-dialog').close(); exportBackup(); };
+  $('share-btn').onclick = () => { shareBackup(); $('backup-dialog').close(); };
   $('import-btn').onclick = () => { $('import-file').click(); $('backup-dialog').close(); };
   $('import-file').onchange = e => { const f = e.target.files[0]; if (f) importBackup(f); e.target.value = ''; };
   $('notif-enable-btn').onclick = async () => {
@@ -537,9 +702,35 @@ function bindEvents() {
     if (Notification.permission === 'default') { const r = await Notification.requestPermission(); if (r === 'granted') { toast('🔔 Erinnerungen aktiviert', 'success'); await store.setSetting('lastNotify', null); checkAndNotify(); } }
     renderMore();
   };
-  $('api-settings-btn').onclick = () => { $('api-base').value = api.base; $('api-token').value = api.token; $('api-dialog').showModal(); };
-  $('api-save-btn').onclick = async () => { await api.save($('api-base').value, $('api-token').value); $('api-dialog').close(); const h = await api.health(); toast(h.ok ? '✔ Erkennungs-Server verbunden' : `Server nicht bereit: ${h.reason || 'nicht erreichbar'}`, h.ok ? 'success' : 'error'); renderMore(); };
+  $('api-settings-btn').onclick = () => {
+    $('api-base').value = api.base; $('api-token').value = api.token; $('api-result').innerHTML = '';
+    // Server-Adresse nur zeigen, wenn sie gesetzt ist oder die App ohne eigenen Server läuft (z. B. GitHub Pages)
+    $('api-advanced').open = !!api.base || location.hostname.endsWith('github.io');
+    $('api-dialog').showModal();
+  };
+  $('api-token-show').onclick = () => { const i = $('api-token'); i.classList.toggle('masked'); $('api-token-show').textContent = i.classList.contains('masked') ? 'Anzeigen' : 'Verbergen'; };
+  $('api-save-btn').onclick = async () => {
+    const out = $('api-result'), btn = $('api-save-btn');
+    try { await api.save($('api-base').value, $('api-token').value); }
+    catch (e) { out.innerHTML = `<div class="ai-box error">${esc(e.message)}</div>`; return; }
+    btn.disabled = true; out.innerHTML = `<div class="spinner-row"><div class="spinner"></div>Verbindung wird geprüft…</div>`;
+    const h = await api.health();
+    btn.disabled = false;
+    renderMore();
+    if (h.ok) { $('api-dialog').close(); toast('✔ Erkennungs-Server verbunden', 'success'); }
+    else out.innerHTML = `<div class="ai-box error">Server nicht bereit: ${esc(h.reason || 'nicht erreichbar')}</div>`;   // Dialog bleibt offen zum Korrigieren
+  };
   $('theme-select').onchange = e => applyTheme(e.target.value);
+  $('account-btn').onclick = () => { accMsg(''); renderAccountDialog(); $('account-dialog').showModal(); };
+  $('acc-tab-login').onclick = () => { accMode = 'login'; accMsg(''); renderAccountDialog(); };
+  $('acc-tab-register').onclick = () => { accMode = 'register'; accMsg(''); renderAccountDialog(); };
+  $('account-form').onsubmit = accountSubmit;
+  $('acc-sync-now').onclick = async () => { const r = await account.sync(); renderAccount(); if (r?.offline) toast('Offline – Abgleich folgt später'); else if (r) toast(`🔄 Abgeglichen (${r.pushed || 0} gesendet, ${r.pulled || 0} empfangen)`, 'success'); };
+  $('acc-logout').onclick = accountLogout;
+  $('acc-delete').onclick = accountDelete;
+  $('acc-pw-change').onclick = accountChangePw;
+  account.onChange(renderAccount);
+  window.addEventListener('store-remote-applied', () => reloadAll());
   $('analytics-toggle').onchange = async e => { await analytics.setConsent(e.target.checked); renderAnalyticsPill(); toast(e.target.checked ? 'Nutzungsstatistik an' : 'Nutzungsstatistik aus – es wird nichts mehr gesendet'); };
   $('analytics-reset').onclick = async () => { await analytics.resetId(); toast('Neue zufällige Kennung erzeugt', 'success'); };
   $('install-btn').onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; $('install-banner').hidden = true; };
@@ -568,6 +759,7 @@ async function init() {
   if (migrated) toast(`🌿 ${migrated} Pflanzen aus der alten Version übernommen`, 'success');
   await api.load();
   await analytics.init(APP_VERSION);
+  await account.init().catch(e => console.warn('Konto:', e));
   plants = await store.all('plants');
   for (const p of plants) { if (!PLANT_DB[p.type]) { const fixed = resolvePlantName(p.type) || (p.type === 'Leuchterblume' ? 'Klivie' : null); if (fixed) { p.type = fixed; await store.put('plants', p); } } }
   bindEvents();
@@ -576,6 +768,8 @@ async function init() {
   const view = new URLSearchParams(location.search).get('view');
   navigate(view || 'plants', { push: false });
   registerSW();
+  renderAccount();
+  if (account.user) account.sync().catch(() => {});
   api.health().then(() => { /* Status für Scan vorbereiten */ });
   checkAndNotify();
   if (analytics.needsConsent) askConsent();

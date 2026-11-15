@@ -47,6 +47,9 @@ function renderSearch() {
 }
 const wishMatches = w => !query || norm(query).split(/\s+/).filter(Boolean).every(t => norm([w.name, w.type, w.type && PLANT_DB[w.type]?.sci, w.room, w.note].filter(Boolean).join(' ')).includes(t));
 
+/** Wunschliste neu aus der Datenbank laden (nach Import oder Synchronisierung). */
+export async function reloadWishlist() { wishlist = await store.all('wishlist'); renderWishlist(); }
+
 export async function initWishlist() {
   wishlist = await store.all('wishlist');
   setWishRef(() => wishlist);

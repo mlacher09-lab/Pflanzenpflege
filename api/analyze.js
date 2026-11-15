@@ -2,9 +2,12 @@
 // Läuft als Vercel Serverless Function (Ordner /api) oder lokal über dev-server.js.
 // Der API-Schlüssel kommt ausschließlich aus der Umgebungsvariable ANTHROPIC_API_KEY.
 import Anthropic from '@anthropic-ai/sdk';
+import { timingSafeEqual } from 'node:crypto';
 import { PLANT_DB } from '../js/plants-db.js';
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-5-5';
+// Erkennung: günstiges Haiku; Gesundheitscheck: Sonnet. ANTHROPIC_MODEL überschreibt beide gemeinsam.
+const MODEL_IDENTIFY = process.env.ANTHROPIC_MODEL_IDENTIFY || process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
+const MODEL_DIAGNOSE = process.env.ANTHROPIC_MODEL_DIAGNOSE || process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 const DB_KEYS = Object.keys(PLANT_DB);
@@ -34,6 +37,11 @@ const IDENTIFY_SCHEMA = {
     note: { type: 'string', description: 'Hinweis, falls keine Pflanze erkennbar ist oder das Foto ungeeignet ist; sonst leer' },
   },
 };
+
+function safeEqual(a, b) {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
 
 function setCors(req, res) {
   const allowed = (process.env.ALLOWED_ORIGIN || '*').split(',').map(s => s.trim());
@@ -67,9 +75,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.statusCode = 204; return res.end(); }
 
   const configured = !!process.env.ANTHROPIC_API_KEY;
-  const tokenRequired = !!process.env.APP_TOKEN;
-  const tokenOk = !tokenRequired || req.headers['x-app-token'] === process.env.APP_TOKEN;
-  if (req.method === 'GET') return send(res, 200, { ok: true, configured, tokenRequired, tokenOk, provider: configured ? 'Claude' : null, model: configured && tokenOk ? MODEL : null });
+  // Leerzeichen/Zeilenumbrüche am Rand (z. B. beim Eintragen in Vercel) nicht als Fehler werten
+  const appToken = (process.env.APP_TOKEN || '').trim();
+  const tokenRequired = !!appToken;
+  const tokenOk = !tokenRequired || safeEqual(String(req.headers['x-app-token'] || '').trim(), appToken);
+  if (req.method === 'GET') return send(res, 200, { ok: true, configured, tokenRequired, tokenOk, provider: configured ? 'Claude' : null, model: configured && tokenOk ? MODEL_IDENTIFY : null, models: configured && tokenOk ? { identify: MODEL_IDENTIFY, diagnose: MODEL_DIAGNOSE } : null });
   if (req.method !== 'POST') return send(res, 405, { error: 'Methode nicht erlaubt' });
 
   if (!tokenOk) return send(res, 401, { error: 'Zugangscode fehlt oder ist falsch' });
@@ -91,14 +101,14 @@ export default async function handler(req, res) {
 Pflegedatenbank (deutscher Name (wissenschaftlicher Name)): ${DB_LIST}.
 Setze dbKey auf den exakten deutschen Datenbank-Schlüssel, wenn Art oder Gattung dort enthalten ist (z. B. Ficus elastica → "Gummibaum", jede Calathea → "Korbmarante", Sansevieria → "Bogenhanf"). Sonst null.
 Gib confidence ehrlich an: 0.9+ nur bei eindeutigen Merkmalen. Beschreibe in health kurz den sichtbaren Zustand (Blattfarbe, Schäden, Schädlinge, Über-/Unterwässerung), ohne zu spekulieren.`;
-      const response = await client.beta.messages.create({
-        model: MODEL,
-        max_tokens: 2048,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        system,
+      // Haiku 5.5 hat keinen serverseitigen Fallback (fallbacks/Beta würden dort nichts bewirken bzw. 400 liefern);
+      // eine Ablehnung wird unten als 422 gemeldet. Der System-Block ist >512 Token und damit cachebar.
+      const response = await client.messages.create({
+        model: MODEL_IDENTIFY,
+        max_tokens: 4096,
+        system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: [imageBlock, { type: 'text', text: 'Welche Pflanze ist das? Antworte im vorgegebenen JSON-Format.' }] }],
-        output_config: { format: { type: 'json_schema', schema: IDENTIFY_SCHEMA } },
+        output_config: { effort: 'low', format: { type: 'json_schema', schema: IDENTIFY_SCHEMA } },
       });
       if (response.stop_reason === 'refusal') return send(res, 422, { error: 'Die Analyse wurde vom Modell abgelehnt. Bitte ein anderes Foto versuchen.' });
       const text = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
@@ -119,10 +129,11 @@ Gliedere die Antwort in:
 
 Bleibe knapp und praktisch (max. 180 Wörter). Ist das Foto unscharf oder zeigt keine Pflanze, sage das und beschreibe, was trotzdem erkennbar ist.`;
     const response = await client.beta.messages.create({
-      model: MODEL,
-      max_tokens: 1500,
+      model: MODEL_DIAGNOSE,
+      max_tokens: 3000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
+      output_config: { effort: 'medium' },
       messages: [{ role: 'user', content: [imageBlock, { type: 'text', text: prompt }] }],
     });
     if (response.stop_reason === 'refusal') return send(res, 422, { error: 'Die Analyse wurde vom Modell abgelehnt.' });
